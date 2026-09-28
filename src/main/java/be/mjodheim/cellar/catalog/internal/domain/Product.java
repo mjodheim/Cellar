@@ -40,15 +40,20 @@ public final class Product {
         this.updatedAt = Objects.requireNonNull(updatedAt);
         this.active = active;
 
-        applyDetails(
-                name,
-                type,
-                description,
-                volumeMl,
-                price
-        );
+        applyDetails(name, type, description, volumeMl, price);
     }
 
+    /**
+     * Creates a new active product that has not yet been persisted.
+     *
+     * @param name product name
+     * @param type product family
+     * @param description optional description
+     * @param volumeMl container volume in millilitres
+     * @param price unit price
+     * @param now creation timestamp
+     * @return new domain product
+     */
     public static Product create(
             String name,
             ProductType type,
@@ -72,6 +77,20 @@ public final class Product {
         );
     }
 
+    /**
+     * Rebuilds a product from persistence without treating it as a new product.
+     *
+     * @param id persisted identifier
+     * @param name product name
+     * @param type product family
+     * @param description optional description
+     * @param volumeMl container volume in millilitres
+     * @param price unit price
+     * @param active whether the product is currently active
+     * @param createdAt original creation timestamp
+     * @param updatedAt last modification timestamp
+     * @return rehydrated domain product
+     */
     public static Product rehydrate(
             Long id,
             String name,
@@ -96,6 +115,16 @@ public final class Product {
         );
     }
 
+    /**
+     * Replaces the editable commercial details while preserving identity and creation time.
+     *
+     * @param name new product name
+     * @param type new product family
+     * @param description new optional description
+     * @param volumeMl new container volume in millilitres
+     * @param price new unit price
+     * @param now modification timestamp
+     */
     public void changeDetails(
             String name,
             ProductType type,
@@ -104,17 +133,17 @@ public final class Product {
             BigDecimal price,
             Instant now
     ) {
-        applyDetails(
-                name,
-                type,
-                description,
-                volumeMl,
-                price
-        );
-
+        applyDetails(name, type, description, volumeMl, price);
         this.updatedAt = Objects.requireNonNull(now);
     }
 
+    /**
+     * Deactivates the product so it can no longer be used for new orders.
+     *
+     * <p>The operation is idempotent and intentionally does not delete historical data.</p>
+     *
+     * @param now modification timestamp
+     */
     public void deactivate(Instant now) {
         if (!active) {
             return;
@@ -154,39 +183,30 @@ public final class Product {
         this.price = price;
     }
 
-    public Long id() {
-        return id;
-    }
+    /** @return persisted identifier, or {@code null} before persistence */
+    public Long id() { return id; }
 
-    public String name() {
-        return name;
-    }
+    /** @return normalized product name */
+    public String name() { return name; }
 
-    public ProductType type() {
-        return type;
-    }
+    /** @return product family */
+    public ProductType type() { return type; }
 
-    public String description() {
-        return description;
-    }
+    /** @return optional description */
+    public String description() { return description; }
 
-    public int volumeMl() {
-        return volumeMl;
-    }
+    /** @return container volume in millilitres */
+    public int volumeMl() { return volumeMl; }
 
-    public BigDecimal price() {
-        return price;
-    }
+    /** @return current unit price */
+    public BigDecimal price() { return price; }
 
-    public boolean active() {
-        return active;
-    }
+    /** @return whether the product is active */
+    public boolean active() { return active; }
 
-    public Instant createdAt() {
-        return createdAt;
-    }
+    /** @return creation timestamp */
+    public Instant createdAt() { return createdAt; }
 
-    public Instant updatedAt() {
-        return updatedAt;
-    }
+    /** @return last modification timestamp */
+    public Instant updatedAt() { return updatedAt; }
 }
