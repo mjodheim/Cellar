@@ -8,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+/**
+ * Read-only Ordering use cases for listing and retrieving non-deleted orders.
+ */
 public class OrderQueryService {
 
     private final OrderRepository orderRepository;

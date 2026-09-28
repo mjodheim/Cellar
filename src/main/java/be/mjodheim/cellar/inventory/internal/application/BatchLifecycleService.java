@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 @Service
+/**
+ * Controls lifecycle operations that affect a batch as a whole, including safe soft deletion.
+ */
 public class BatchLifecycleService {
 
     private final BatchRepository batchRepository;

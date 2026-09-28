@@ -15,6 +15,10 @@ import java.time.Instant;
 import java.util.List;
 
 @Service
+/**
+ * Releases or consumes stock allocations while keeping batches, allocations and
+ * stock-movement history consistent in one transaction.
+ */
 public class AllocationLifecycleService {
 
     private final AllocationRepository allocationRepository;

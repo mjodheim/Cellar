@@ -10,6 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 @Service
+/**
+ * Coordinates order status transitions with Inventory reservations and shipment consumption.
+ *
+ * <p>Because Cellar is a monolith, these cross-module operations participate in the
+ * same transaction, preserving consistency if allocation or shipment fails.</p>
+ */
 public class OrderLifecycleService {
 
     private final OrderRepository orderRepository;

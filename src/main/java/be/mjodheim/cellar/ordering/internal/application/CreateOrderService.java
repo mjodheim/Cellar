@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+/**
+ * Creates draft orders from catalogue snapshots exposed through the Catalog module API.
+ */
 public class CreateOrderService {
 
     private final OrderRepository orderRepository;
