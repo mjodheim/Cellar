@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 
 /**
  * Coordinates registration, login, refresh-token rotation and logout.
@@ -50,13 +51,14 @@ public class AuthenticationService {
     /** Registers a regular USER account and returns its first token pair. */
     @Transactional
     public AuthenticationResult register(String email, String displayName, String rawPassword) {
-        if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyRegisteredException(email);
+        String normalizedEmail = normalizeEmail(email);
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new EmailAlreadyRegisteredException(normalizedEmail);
         }
 
         Instant now = Instant.now();
         User user = User.register(
-                email,
+                normalizedEmail,
                 displayName,
                 passwordHashingPort.hash(rawPassword),
                 Role.USER,
@@ -69,7 +71,7 @@ public class AuthenticationService {
     /** Authenticates an enabled, non-deleted account. */
     @Transactional
     public AuthenticationResult login(String email, String rawPassword) {
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(normalizeEmail(email))
                 .filter(candidate -> candidate.enabled() && !candidate.isDeleted())
                 .orElseThrow(InvalidCredentialsException::new);
 
@@ -108,6 +110,10 @@ public class AuthenticationService {
             token.revoke(Instant.now());
             refreshTokenRepository.save(token);
         });
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
     }
 
     private AuthenticationResult issueSession(User user, Instant now) {

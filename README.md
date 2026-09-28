@@ -170,3 +170,43 @@ Le code doit suivre le métier, pas l'inverse.
 - [Order](docs/ordering/ORDER.md)
 - [OrderLine](docs/ordering/ORDER_LINE.md)
 - [Pratiques professionnelles retenues](docs/PROFESSIONAL_PRACTICES.md)
+
+
+## Sécurité et identité
+
+Cellar utilise Spring Security en mode stateless avec :
+
+- access tokens JWT courts ;
+- refresh tokens opaques avec rotation ;
+- BCrypt pour les mots de passe ;
+- rôles `USER` et `ADMIN` ;
+- soft delete des comptes ;
+- Swagger configuré avec Bearer authentication.
+
+Avant de démarrer l'application après activation de la sécurité, renseigner au minimum dans le `.env` :
+
+```env
+JWT_SECRET=<clé Base64 de 32 octets minimum>
+```
+
+Une clé locale peut être générée avec :
+
+```bash
+openssl rand -base64 32
+```
+
+Pour créer automatiquement le premier administrateur au démarrage, renseigner aussi :
+
+```env
+BOOTSTRAP_ADMIN_EMAIL=
+BOOTSTRAP_ADMIN_NAME=
+BOOTSTRAP_ADMIN_PASSWORD=
+```
+
+Les valeurs réelles ne doivent jamais être commitées.
+
+Documentation détaillée :
+
+- [Sécurité](docs/SECURITY.md)
+- [User](docs/identity/USER.md)
+- [RefreshToken](docs/identity/REFRESH_TOKEN.md)

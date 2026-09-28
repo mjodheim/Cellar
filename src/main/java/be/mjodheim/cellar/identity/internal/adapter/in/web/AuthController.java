@@ -3,6 +3,7 @@ package be.mjodheim.cellar.identity.internal.adapter.in.web;
 import be.mjodheim.cellar.identity.internal.application.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ class AuthController {
         this.userAccountService = userAccountService;
     }
 
+    @SecurityRequirements
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Créer un compte utilisateur")
@@ -41,6 +43,7 @@ class AuthController {
         ));
     }
 
+    @SecurityRequirements
     @PostMapping("/login")
     @Operation(summary = "Se connecter")
     AuthResponse login(@Valid @RequestBody LoginRequest request) {
@@ -50,12 +53,14 @@ class AuthController {
         ));
     }
 
+    @SecurityRequirements
     @PostMapping("/refresh")
     @Operation(summary = "Renouveler les jetons et faire tourner le refresh token")
     AuthResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return AuthResponse.from(authenticationService.refresh(request.refreshToken()));
     }
 
+    @SecurityRequirements
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Révoquer un refresh token")
