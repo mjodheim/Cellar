@@ -7,12 +7,34 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Spring Data repository for physical stock batches.
+ */
 interface JpaBatchRepository extends JpaRepository<BatchEntity, Long> {
 
+    /**
+     * Finds a non-deleted batch by identifier.
+     *
+     * @param id batch identifier
+     * @return matching batch or an empty optional
+     */
     Optional<BatchEntity> findByIdAndDeletedAtIsNull(Long id);
 
+    /**
+     * Checks active lot-number uniqueness within a product.
+     *
+     * @param productId product identifier
+     * @param lotNumber lot reference
+     * @return {@code true} when an active matching lot exists
+     */
     boolean existsByProductIdAndLotNumberIgnoreCaseAndDeletedAtIsNull(Long productId, String lotNumber);
 
+    /**
+     * Returns available batches in FEFO order.
+     *
+     * @param productId product identifier
+     * @return available batches ordered by expiration, reception and identifier
+     */
     @Query("""
             select b from BatchEntity b
             where b.productId = :productId
