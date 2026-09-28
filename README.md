@@ -159,3 +159,14 @@ Avant d'ajouter une classe ou une dépendance, on doit pouvoir répondre à deux
 2. **À quel module appartient-elle ?**
 
 Le code doit suivre le métier, pas l'inverse.
+
+
+## Documentation métier détaillée
+
+- [Product](docs/catalog/PRODUCT.md)
+- [Batch](docs/inventory/BATCH.md)
+- [StockMovement](docs/inventory/STOCK_MOVEMENT.md)
+- [Allocation](docs/inventory/ALLOCATION.md)
+- [Order](docs/ordering/ORDER.md)
+- [OrderLine](docs/ordering/ORDER_LINE.md)
+- [Pratiques professionnelles retenues](docs/PROFESSIONAL_PRACTICES.md)
