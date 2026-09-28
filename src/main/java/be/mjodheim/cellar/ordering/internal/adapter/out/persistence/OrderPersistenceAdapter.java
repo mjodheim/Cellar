@@ -7,6 +7,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Persistence adapter implementing the Ordering repository port.
+ */
 @Repository
 class OrderPersistenceAdapter implements OrderRepository {
 
@@ -16,16 +19,19 @@ class OrderPersistenceAdapter implements OrderRepository {
         this.repository = repository;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Order save(Order order) {
         return OrderPersistenceMapper.toDomain(repository.save(OrderPersistenceMapper.toEntity(order)));
     }
 
+    /** {@inheritDoc} */
     @Override
     public Optional<Order> findById(Long id) {
         return repository.findByIdAndDeletedAtIsNull(id).map(OrderPersistenceMapper::toDomain);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Order> findAll() {
         return repository.findAllByDeletedAtIsNullOrderByIdDesc().stream()

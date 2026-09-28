@@ -7,6 +7,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * JPA representation of a customer order aggregate.
+ */
 @Entity
 @Table(name = "customer_order")
 class OrderEntity {
@@ -38,8 +41,12 @@ class OrderEntity {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    /** Constructor required by JPA. */
     protected OrderEntity() {}
 
+    /**
+     * Builds an order entity from explicit persisted values.
+     */
     OrderEntity(Long id, String orderNumber, String customerReference, OrderStatus status,
                 Instant createdAt, Instant updatedAt, Instant deletedAt) {
         this.id = id;
@@ -51,6 +58,11 @@ class OrderEntity {
         this.deletedAt = deletedAt;
     }
 
+    /**
+     * Adds a line to the aggregate and sets its owning order reference.
+     *
+     * @param line line entity to attach
+     */
     void addLine(OrderLineEntity line) {
         lines.add(line);
         line.attachTo(this);

@@ -3,10 +3,19 @@ package be.mjodheim.cellar.ordering.internal.adapter.out.persistence;
 import be.mjodheim.cellar.ordering.internal.domain.Order;
 import be.mjodheim.cellar.ordering.internal.domain.OrderLine;
 
+/**
+ * Bidirectional mapper between Ordering domain objects and JPA entities.
+ */
 final class OrderPersistenceMapper {
 
     private OrderPersistenceMapper() {}
 
+    /**
+     * Converts an order aggregate to its persistence representation.
+     *
+     * @param order domain order
+     * @return order entity with attached line entities
+     */
     static OrderEntity toEntity(Order order) {
         OrderEntity entity = new OrderEntity(
                 order.id(),
@@ -32,6 +41,12 @@ final class OrderPersistenceMapper {
         return entity;
     }
 
+    /**
+     * Rehydrates an order aggregate and its lines from persisted values.
+     *
+     * @param entity order persistence entity
+     * @return domain order
+     */
     static Order toDomain(OrderEntity entity) {
         return Order.rehydrate(
                 entity.id(),

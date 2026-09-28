@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * JPA representation of a persisted order-line commercial snapshot.
+ */
 @Entity
 @Table(name = "order_line")
 class OrderLineEntity {
@@ -32,8 +35,12 @@ class OrderLineEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    /** Constructor required by JPA. */
     protected OrderLineEntity() {}
 
+    /**
+     * Builds an order-line entity from explicit persisted values.
+     */
     OrderLineEntity(Long id, Long productId, String productName, int quantity, BigDecimal unitPrice, Instant createdAt) {
         this.id = id;
         this.productId = productId;
@@ -43,6 +50,11 @@ class OrderLineEntity {
         this.createdAt = createdAt;
     }
 
+    /**
+     * Attaches this line to its owning order entity.
+     *
+     * @param order owning order entity
+     */
     void attachTo(OrderEntity order) {
         this.order = order;
     }
