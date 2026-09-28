@@ -7,5 +7,12 @@ package be.mjodheim.cellar.catalog;
  * internal domain or persistence classes.</p>
  */
 public interface CatalogProducts {
+
+    /**
+     * Retrieves the catalogue data needed by another module.
+     *
+     * @param id product identifier
+     * @return stable public product projection
+     */
     CatalogProductView getProduct(Long id);
 }

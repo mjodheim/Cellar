@@ -6,6 +6,12 @@ import be.mjodheim.cellar.catalog.internal.application.port.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Internal implementation of the public Catalog module API.
+ *
+ * <p>The service translates the internal Product aggregate into the stable
+ * projection exposed to other modules.</p>
+ */
 @Service
 class CatalogProductsService implements CatalogProducts {
 
@@ -15,6 +21,7 @@ class CatalogProductsService implements CatalogProducts {
         this.productRepository = productRepository;
     }
 
+    /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
     public CatalogProductView getProduct(Long id) {
