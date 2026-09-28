@@ -3,6 +3,12 @@ package be.mjodheim.cellar.inventory.internal.domain;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Immutable stock-ledger entry explaining a physical stock variation.
+ *
+ * <p>The direction of the movement is expressed by {@link StockMovementType};
+ * quantities are therefore always strictly positive.</p>
+ */
 public final class StockMovement {
 
     private final Long id;

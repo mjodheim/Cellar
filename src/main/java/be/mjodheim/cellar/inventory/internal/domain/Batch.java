@@ -4,6 +4,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
 
+/**
+ * Physical stock lot belonging to a catalogue product.
+ *
+ * <p>A batch owns the current on-hand and reserved quantities and enforces
+ * stock invariants. Soft-deleted batches remain available for historical
+ * traceability but can no longer be modified.</p>
+ */
 public final class Batch {
 
     private final Long id;

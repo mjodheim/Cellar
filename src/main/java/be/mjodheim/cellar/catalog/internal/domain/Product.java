@@ -4,6 +4,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Business representation of a product offered in the Mjödheim catalogue.
+ *
+ * <p>This class deliberately contains no JPA or HTTP concerns. It protects the
+ * product invariants and is persisted through a dedicated adapter.</p>
+ */
 public final class Product {
 
     private final Long id;

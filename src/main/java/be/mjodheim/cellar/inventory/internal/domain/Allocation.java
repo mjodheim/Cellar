@@ -3,6 +3,13 @@ package be.mjodheim.cellar.inventory.internal.domain;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Reservation link between an order line and a physical batch.
+ *
+ * <p>An allocation starts as RESERVED and can then be released or consumed.
+ * It is intentionally separate from physical stock movements because a
+ * reservation does not change the physical quantity on hand.</p>
+ */
 public final class Allocation {
 
     private final Long id;
