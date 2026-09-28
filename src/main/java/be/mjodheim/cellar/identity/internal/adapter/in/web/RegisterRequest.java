@@ -6,6 +6,11 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Public registration payload.
+ *
+ * @param email requested account email
+ * @param displayName user-facing name
+ * @param password clear-text password to hash immediately
+ * @param passwordConfirm confirmation used only for request validation
  */
 @PasswordMatches
 record RegisterRequest(

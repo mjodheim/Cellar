@@ -5,7 +5,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Login payload. Error responses intentionally remain generic.
+ * Login payload.
+ *
+ * <p>Error responses remain generic so the API does not reveal whether an email
+ * address exists.</p>
+ *
+ * @param email account email
+ * @param password clear-text password supplied for this authentication attempt
  */
 record LoginRequest(
         @NotBlank @Email @Size(max = 254) String email,
