@@ -14,17 +14,24 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 
-@Service
 /**
  * Releases or consumes stock allocations while keeping batches, allocations and
  * stock-movement history consistent in one transaction.
  */
+@Service
 public class AllocationLifecycleService {
 
     private final AllocationRepository allocationRepository;
     private final BatchRepository batchRepository;
     private final StockMovementRepository movementRepository;
 
+    /**
+     * Creates the allocation lifecycle service.
+     *
+     * @param allocationRepository allocation persistence boundary
+     * @param batchRepository batch persistence boundary
+     * @param movementRepository movement persistence boundary
+     */
     public AllocationLifecycleService(
             AllocationRepository allocationRepository,
             BatchRepository batchRepository,
@@ -35,6 +42,11 @@ public class AllocationLifecycleService {
         this.movementRepository = movementRepository;
     }
 
+    /**
+     * Releases every reserved allocation for an order line.
+     *
+     * @param orderLineId order-line identifier
+     */
     @Transactional
     public void releaseForOrderLine(Long orderLineId) {
         Instant now = Instant.now();
@@ -51,6 +63,11 @@ public class AllocationLifecycleService {
         }
     }
 
+    /**
+     * Consumes every reserved allocation for an order line and records shipment movements.
+     *
+     * @param orderLineId order-line identifier
+     */
     @Transactional
     public void consumeForOrderLine(Long orderLineId) {
         Instant now = Instant.now();
