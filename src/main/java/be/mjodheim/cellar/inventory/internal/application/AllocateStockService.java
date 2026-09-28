@@ -11,20 +11,36 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
 /**
  * Allocates available stock to an order line using FEFO ordering supplied by the repository.
  */
+@Service
 public class AllocateStockService {
 
     private final BatchRepository batchRepository;
     private final AllocationRepository allocationRepository;
 
+    /**
+     * Creates the allocation use-case service.
+     *
+     * @param batchRepository batch persistence boundary
+     * @param allocationRepository allocation persistence boundary
+     */
     public AllocateStockService(BatchRepository batchRepository, AllocationRepository allocationRepository) {
         this.batchRepository = batchRepository;
         this.allocationRepository = allocationRepository;
     }
 
+    /**
+     * Reserves the requested quantity across available batches in FEFO order.
+     *
+     * @param orderLineId order-line identifier
+     * @param productId product identifier
+     * @param quantity quantity to allocate
+     * @return created allocations in allocation order
+     * @throws IllegalArgumentException when quantity is not positive
+     * @throws InsufficientStockException when total available stock is insufficient
+     */
     @Transactional
     public List<Allocation> allocateFefo(Long orderLineId, Long productId, int quantity) {
         if (quantity <= 0) {
