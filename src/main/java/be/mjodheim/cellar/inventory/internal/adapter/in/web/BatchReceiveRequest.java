@@ -8,6 +8,15 @@ import jakarta.validation.constraints.Positive;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * HTTP payload used to receive a new physical stock batch.
+ *
+ * @param productId catalogue product identifier
+ * @param lotNumber supplier or production lot reference
+ * @param quantity initial received quantity
+ * @param receivedAt physical reception timestamp
+ * @param expiresOn optional expiration date
+ */
 record BatchReceiveRequest(
         @NotNull @Positive Long productId,
         @NotBlank String lotNumber,

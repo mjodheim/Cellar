@@ -2,39 +2,78 @@ package be.mjodheim.cellar.inventory.internal.adapter.out.persistence;
 
 import be.mjodheim.cellar.inventory.internal.domain.*;
 
+/**
+ * Bidirectional mapper between Inventory domain objects and JPA entities.
+ */
 final class InventoryPersistenceMapper {
 
     private InventoryPersistenceMapper() {}
 
-    static BatchEntity toEntity(Batch b) {
-        return new BatchEntity(b.id(), b.productId(), b.lotNumber(), b.receivedQuantity(),
-                b.quantityOnHand(), b.quantityReserved(), b.receivedAt(), b.expiresOn(),
-                b.createdAt(), b.updatedAt(), b.deletedAt());
+    /**
+     * Converts a batch aggregate to a persistence entity.
+     *
+     * @param batch domain batch
+     * @return persistence entity
+     */
+    static BatchEntity toEntity(Batch batch) {
+        return new BatchEntity(batch.id(), batch.productId(), batch.lotNumber(), batch.receivedQuantity(),
+                batch.quantityOnHand(), batch.quantityReserved(), batch.receivedAt(), batch.expiresOn(),
+                batch.createdAt(), batch.updatedAt(), batch.deletedAt());
     }
 
-    static Batch toDomain(BatchEntity e) {
-        return Batch.rehydrate(e.id(), e.productId(), e.lotNumber(), e.receivedQuantity(),
-                e.quantityOnHand(), e.quantityReserved(), e.receivedAt(), e.expiresOn(),
-                e.createdAt(), e.updatedAt(), e.deletedAt());
+    /**
+     * Rehydrates a batch aggregate from persisted values.
+     *
+     * @param entity persistence entity
+     * @return domain batch
+     */
+    static Batch toDomain(BatchEntity entity) {
+        return Batch.rehydrate(entity.id(), entity.productId(), entity.lotNumber(), entity.receivedQuantity(),
+                entity.quantityOnHand(), entity.quantityReserved(), entity.receivedAt(), entity.expiresOn(),
+                entity.createdAt(), entity.updatedAt(), entity.deletedAt());
     }
 
-    static StockMovementEntity toEntity(StockMovement m) {
-        return new StockMovementEntity(m.id(), m.batchId(), m.type(), m.quantity(), m.reference(),
-                m.note(), m.occurredAt(), m.createdAt());
+    /**
+     * Converts a stock movement to a persistence entity.
+     *
+     * @param movement domain movement
+     * @return persistence entity
+     */
+    static StockMovementEntity toEntity(StockMovement movement) {
+        return new StockMovementEntity(movement.id(), movement.batchId(), movement.type(), movement.quantity(), movement.reference(),
+                movement.note(), movement.occurredAt(), movement.createdAt());
     }
 
-    static StockMovement toDomain(StockMovementEntity e) {
-        return StockMovement.rehydrate(e.id(), e.batchId(), e.type(), e.quantity(), e.reference(),
-                e.note(), e.occurredAt(), e.createdAt());
+    /**
+     * Rehydrates a stock movement from persisted values.
+     *
+     * @param entity persistence entity
+     * @return domain movement
+     */
+    static StockMovement toDomain(StockMovementEntity entity) {
+        return StockMovement.rehydrate(entity.id(), entity.batchId(), entity.type(), entity.quantity(), entity.reference(),
+                entity.note(), entity.occurredAt(), entity.createdAt());
     }
 
-    static AllocationEntity toEntity(Allocation a) {
-        return new AllocationEntity(a.id(), a.orderLineId(), a.batchId(), a.quantity(), a.status(),
-                a.createdAt(), a.updatedAt());
+    /**
+     * Converts an allocation to a persistence entity.
+     *
+     * @param allocation domain allocation
+     * @return persistence entity
+     */
+    static AllocationEntity toEntity(Allocation allocation) {
+        return new AllocationEntity(allocation.id(), allocation.orderLineId(), allocation.batchId(), allocation.quantity(), allocation.status(),
+                allocation.createdAt(), allocation.updatedAt());
     }
 
-    static Allocation toDomain(AllocationEntity e) {
-        return Allocation.rehydrate(e.id(), e.orderLineId(), e.batchId(), e.quantity(), e.status(),
-                e.createdAt(), e.updatedAt());
+    /**
+     * Rehydrates an allocation from persisted values.
+     *
+     * @param entity persistence entity
+     * @return domain allocation
+     */
+    static Allocation toDomain(AllocationEntity entity) {
+        return Allocation.rehydrate(entity.id(), entity.orderLineId(), entity.batchId(), entity.quantity(), entity.status(),
+                entity.createdAt(), entity.updatedAt());
     }
 }

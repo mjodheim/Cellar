@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * JPA representation of a physical inventory batch.
+ */
 @Entity
 @Table(name = "batch")
 class BatchEntity {
@@ -43,8 +46,12 @@ class BatchEntity {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    /** Constructor required by JPA. */
     protected BatchEntity() {}
 
+    /**
+     * Builds a batch persistence entity from explicit stored values.
+     */
     BatchEntity(Long id, Long productId, String lotNumber, int receivedQuantity, int quantityOnHand,
                 int quantityReserved, Instant receivedAt, LocalDate expiresOn, Instant createdAt,
                 Instant updatedAt, Instant deletedAt) {

@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 
+/**
+ * JPA representation of a stock allocation between an order line and a batch.
+ */
 @Entity
 @Table(name = "allocation")
 class AllocationEntity {
@@ -32,15 +35,23 @@ class AllocationEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /** Constructor required by JPA. */
     protected AllocationEntity() {}
 
+    /**
+     * Builds an allocation entity from explicit persisted values.
+     */
     AllocationEntity(Long id, Long orderLineId, Long batchId, int quantity, AllocationStatus status,
                      Instant createdAt, Instant updatedAt) {
         this.id=id; this.orderLineId=orderLineId; this.batchId=batchId; this.quantity=quantity;
         this.status=status; this.createdAt=createdAt; this.updatedAt=updatedAt;
     }
 
-    Long id(){return id;} Long orderLineId(){return orderLineId;} Long batchId(){return batchId;}
-    int quantity(){return quantity;} AllocationStatus status(){return status;}
-    Instant createdAt(){return createdAt;} Instant updatedAt(){return updatedAt;}
+    Long id(){return id;}
+    Long orderLineId(){return orderLineId;}
+    Long batchId(){return batchId;}
+    int quantity(){return quantity;}
+    AllocationStatus status(){return status;}
+    Instant createdAt(){return createdAt;}
+    Instant updatedAt(){return updatedAt;}
 }

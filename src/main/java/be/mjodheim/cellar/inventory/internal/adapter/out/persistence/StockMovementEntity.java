@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 
+/**
+ * JPA representation of an immutable stock-movement ledger entry.
+ */
 @Entity
 @Table(name = "stock_movement")
 class StockMovementEntity {
@@ -35,15 +38,24 @@ class StockMovementEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    /** Constructor required by JPA. */
     protected StockMovementEntity() {}
 
+    /**
+     * Builds a movement entity from explicit persisted values.
+     */
     StockMovementEntity(Long id, Long batchId, StockMovementType type, int quantity, String reference,
                         String note, Instant occurredAt, Instant createdAt) {
         this.id=id; this.batchId=batchId; this.type=type; this.quantity=quantity; this.reference=reference;
         this.note=note; this.occurredAt=occurredAt; this.createdAt=createdAt;
     }
 
-    Long id(){return id;} Long batchId(){return batchId;} StockMovementType type(){return type;}
-    int quantity(){return quantity;} String reference(){return reference;} String note(){return note;}
-    Instant occurredAt(){return occurredAt;} Instant createdAt(){return createdAt;}
+    Long id(){return id;}
+    Long batchId(){return batchId;}
+    StockMovementType type(){return type;}
+    int quantity(){return quantity;}
+    String reference(){return reference;}
+    String note(){return note;}
+    Instant occurredAt(){return occurredAt;}
+    Instant createdAt(){return createdAt;}
 }
