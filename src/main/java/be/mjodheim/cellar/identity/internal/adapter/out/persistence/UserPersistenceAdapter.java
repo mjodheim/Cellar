@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Persistence adapter implementing the Identity user repository port.
+ */
 @Repository
 class UserPersistenceAdapter implements UserRepository {
 
@@ -15,11 +18,13 @@ class UserPersistenceAdapter implements UserRepository {
         this.repository = repository;
     }
 
+    /** {@inheritDoc} */
     @Override
     public User save(User user) {
         return IdentityPersistenceMapper.toDomain(repository.save(IdentityPersistenceMapper.toEntity(user)));
     }
 
+    /** {@inheritDoc} */
     @Override
     public Optional<User> findById(Long id) {
         return repository.findById(id)
@@ -27,12 +32,14 @@ class UserPersistenceAdapter implements UserRepository {
                 .map(IdentityPersistenceMapper::toDomain);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Optional<User> findByEmail(String email) {
         return repository.findByEmailIgnoreCaseAndDeletedAtIsNull(email)
                 .map(IdentityPersistenceMapper::toDomain);
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean existsByEmail(String email) {
         return repository.existsByEmailIgnoreCaseAndDeletedAtIsNull(email);

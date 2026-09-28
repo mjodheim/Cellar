@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 
+/**
+ * JPA representation of a Cellar user account.
+ */
 @Entity
 @Table(name = "app_user")
 class UserEntity {
@@ -38,15 +41,25 @@ class UserEntity {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
+    /** Constructor required by JPA. */
     protected UserEntity() {}
 
+    /**
+     * Builds a user persistence entity from explicit stored values.
+     */
     UserEntity(Long id, String email, String displayName, String passwordHash, Role role,
                boolean enabled, Instant createdAt, Instant updatedAt, Instant deletedAt) {
         this.id=id; this.email=email; this.displayName=displayName; this.passwordHash=passwordHash;
         this.role=role; this.enabled=enabled; this.createdAt=createdAt; this.updatedAt=updatedAt; this.deletedAt=deletedAt;
     }
 
-    Long id(){return id;} String email(){return email;} String displayName(){return displayName;}
-    String passwordHash(){return passwordHash;} Role role(){return role;} boolean enabled(){return enabled;}
-    Instant createdAt(){return createdAt;} Instant updatedAt(){return updatedAt;} Instant deletedAt(){return deletedAt;}
+    Long id(){return id;}
+    String email(){return email;}
+    String displayName(){return displayName;}
+    String passwordHash(){return passwordHash;}
+    Role role(){return role;}
+    boolean enabled(){return enabled;}
+    Instant createdAt(){return createdAt;}
+    Instant updatedAt(){return updatedAt;}
+    Instant deletedAt(){return deletedAt;}
 }
