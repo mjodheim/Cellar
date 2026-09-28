@@ -1,12 +1,10 @@
-# Batch
+# 📦 Batch
 
-`Batch` représente un **lot physique** d'un produit du catalogue.
+> `Batch` représente un **lot physique réel** d'un produit du catalogue.
 
-## Pourquoi Batch est séparé de Product ?
+---
 
-`Product` décrit ce que Mjödheim vend. `Batch` décrit ce qui existe réellement dans la cave.
-
-Un même produit peut avoir plusieurs lots, reçus à des dates différentes et avec des dates d'expiration différentes.
+## 🔍 Product vs Batch
 
 ```text
 Product "Hydromel Classique"
@@ -15,42 +13,70 @@ Product "Hydromel Classique"
 └── LOT-2026-003
 ```
 
-## État suivi
+| Product | Batch |
+| --- | --- |
+| décrit ce qui est vendu | décrit ce qui existe physiquement |
+| prix / nom / volume | quantité / lot / expiration |
+| Catalog | Inventory |
+
+---
+
+## 📊 État suivi
 
 Un lot conserve notamment :
 
-- l'identifiant du produit ;
-- le numéro de lot ;
-- la quantité reçue ;
-- la quantité physiquement présente ;
-- la quantité réservée ;
-- la date de réception ;
-- la date d'expiration éventuelle ;
-- les dates techniques de création, modification et soft delete.
+- produit concerné ;
+- numéro de lot ;
+- quantité reçue ;
+- quantité physique ;
+- quantité réservée ;
+- réception ;
+- expiration éventuelle ;
+- dates de création, modification et soft delete.
 
-La quantité disponible est calculée :
+### Quantité disponible
 
 ```text
-available = quantityOnHand - quantityReserved
+availableQuantity = quantityOnHand - quantityReserved
 ```
 
-## Règles métier
+---
 
-- une quantité reçue doit être strictement positive ;
-- la quantité physique ne peut jamais être négative ;
-- la quantité réservée ne peut jamais dépasser la quantité physique ;
-- une réservation ne peut pas dépasser le stock disponible ;
-- une libération ne peut pas dépasser la quantité réservée ;
-- une expédition réservée diminue à la fois la réservation et le stock physique ;
-- un lot supprimé logiquement ne peut plus être modifié ;
-- un lot ne peut être soft-deleted que lorsque son stock et ses réservations sont à zéro.
+## ✅ Règles métier
 
-## Soft delete
+- quantité reçue > 0 ;
+- stock physique ≥ 0 ;
+- quantité réservée ≥ 0 ;
+- quantité réservée ≤ quantité physique ;
+- impossible de réserver plus que le disponible ;
+- impossible de libérer plus que le réservé ;
+- expédier du réservé diminue réservation **et** stock physique ;
+- un lot soft-deleted ne peut plus être modifié ;
+- un lot n'est supprimable logiquement que si stock et réservations valent 0.
 
-Le lot n'est pas supprimé physiquement de la base.
+---
 
-`deletedAt` permet de conserver la traçabilité historique. C'est particulièrement important pour les commandes et mouvements de stock déjà réalisés.
+## 🗑️ Soft delete
 
-## FEFO
+Le lot n'est pas supprimé physiquement.
 
-La date `expiresOn` permettra au service d'allocation de choisir les lots selon **FEFO** (First Expired, First Out) : le lot qui expire le plus tôt est utilisé en priorité.
+`deletedAt` conserve l'historique indispensable aux commandes et mouvements déjà réalisés.
+
+---
+
+## ⏳ FEFO
+
+`expiresOn` participe à l'ordre **First Expired, First Out**.
+
+```text
+expire tôt → utilisé en premier
+sans expiration → après les lots datés
+```
+
+---
+
+## 🔗 Voir aussi
+
+- [StockMovement](STOCK_MOVEMENT.md)
+- [Allocation](ALLOCATION.md)
+- [Product](../catalog/PRODUCT.md)

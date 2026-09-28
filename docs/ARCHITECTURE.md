@@ -1,19 +1,176 @@
-# Architecture de Cellar
+# 🧭 Architecture de Cellar
 
-## Décision
+> **Décision structurante :** Cellar est un **monolithe modulaire Spring Boot + Spring Modulith**, organisé par capacité métier et structuré en Clean / Hexagonal Architecture à l'intérieur de chaque module.
 
-Cellar est construit comme un **monolithe modulaire Spring Boot avec Spring Modulith**.
+---
 
-Ce choix combine deux idées :
+## 🎯 Objectif
 
-1. **Package by business capability** : le premier niveau de découpage est métier.
-2. **Clean / Hexagonal Architecture à l'intérieur de chaque module** : le domaine est protégé des technologies.
+L'architecture cherche à obtenir quatre qualités :
 
-Le but n'est pas de multiplier les couches pour elles-mêmes, mais de rendre les frontières explicites.
+| Objectif | Comment |
+| --- | --- |
+| **Lisibilité** | le premier niveau de découpage est métier |
+| **Isolation** | chaque module protège ses détails internes |
+| **Testabilité** | domaine et cas d'usage restent découplés des frameworks |
+| **Évolutivité** | un module peut évoluer sans casser les autres |
 
-## Pourquoi ne pas utiliser cinq modules Maven techniques ?
+Le but n'est pas d'ajouter des couches pour le principe, mais de rendre les responsabilités explicites.
 
-Une structure globale du type :
+---
+
+## 🧩 Modules applicatifs
+
+```text
+catalog
+inventory
+ordering
+identity
+```
+
+### Vue d'ensemble
+
+```mermaid
+flowchart LR
+    CLIENT[Client / Swagger]
+
+    subgraph CELLAR[Cellar]
+        C[Catalog]
+        I[Inventory]
+        O[Ordering]
+        ID[Identity]
+
+        O -->|CatalogProducts| C
+        O -->|InventoryOperations| I
+    end
+
+    DB[(PostgreSQL)]
+
+    CLIENT --> CELLAR
+    C --> DB
+    I --> DB
+    O --> DB
+    ID --> DB
+```
+
+---
+
+## 🏗️ Structure interne d'un module
+
+```text
+module/
+├── API publique du module
+└── internal/
+    ├── domain/
+    ├── application/
+    │   └── port/
+    └── adapter/
+        ├── in/
+        │   └── web/
+        └── out/
+            ├── persistence/
+            └── security/
+```
+
+### API publique
+
+Le package racine contient uniquement ce que les autres modules sont autorisés à utiliser.
+
+Exemples actuels :
+
+```text
+catalog.CatalogProducts
+catalog.CatalogProductView
+inventory.InventoryOperations
+```
+
+### `internal/domain`
+
+Contient le modèle métier pur :
+
+- entités ;
+- enums ;
+- invariants ;
+- transitions d'état ;
+- calculs métier.
+
+Le domaine ne dépend pas de Spring MVC, JPA, PostgreSQL ou Spring Security.
+
+### `internal/application`
+
+Contient :
+
+- cas d'usage ;
+- orchestration ;
+- transactions ;
+- ports entrants/sortants ;
+- coordination entre agrégats.
+
+### `internal/adapter/in`
+
+Ce qui entre dans le module :
+
+- contrôleurs REST ;
+- request DTO ;
+- response DTO ;
+- validation HTTP.
+
+### `internal/adapter/out`
+
+Ce qui relie le module au monde technique :
+
+- JPA / PostgreSQL ;
+- sécurité ;
+- demain : Redis, génération de documents, stockage de fichiers, API externes.
+
+---
+
+## ➡️ Sens des dépendances
+
+```mermaid
+flowchart LR
+    HTTP[HTTP / REST] --> IN[Adapter entrant]
+    IN --> APP[Application]
+    APP --> DOMAIN[Domain]
+    APP --> PORT[Port]
+    OUT[Adapter sortant] --> PORT
+    OUT --> TECH[(DB / Security / API externe)]
+```
+
+> Le domaine ne connaît jamais ses adapters.
+
+---
+
+## 🔗 Collaboration entre modules
+
+Un module ne doit jamais importer les classes `internal` d'un autre module.
+
+### ❌ À éviter
+
+```text
+ordering
+  └── catalog.internal.adapter.out.persistence.ProductEntity
+```
+
+### ✅ Correct
+
+```text
+ordering
+  └── catalog.CatalogProducts
+```
+
+Aujourd'hui :
+
+```text
+Ordering ──> CatalogProducts
+Ordering ──> InventoryOperations
+```
+
+---
+
+## 🧱 Pourquoi pas des modules Maven techniques ?
+
+Une séparation globale de type :
 
 ```text
 domain
@@ -23,208 +180,87 @@ infra
 api
 ```
 
-sépare correctement les responsabilités techniques, mais disperse une même fonctionnalité dans plusieurs endroits.
+sépare les responsabilités techniques, mais disperse une même fonctionnalité métier.
 
-Pour comprendre entièrement le catalogue, il faut alors naviguer entre plusieurs modules.
-
-Avec le Modulith, on commence par :
+Avec Cellar, tout ce qui concerne un domaine reste proche :
 
 ```text
-catalog
-inventory
-ordering
-identity
-```
-
-Chaque capacité métier possède ensuite ses propres couches internes.
-
-Cela favorise la cohésion : ce qui change ensemble reste proche.
-
-## Pourquoi pas des microservices ?
-
-Les microservices ajouteraient immédiatement :
-
-- appels réseau ;
-- tolérance aux pannes distribuées ;
-- observabilité inter-services ;
-- gestion de versions entre services ;
-- cohérence éventuelle ;
-- déploiements multiples ;
-- duplication de configuration ;
-- complexité transactionnelle.
-
-Cellar n'a pas besoin de ces coûts aujourd'hui.
-
-Un Modulith garde des frontières suffisamment fortes pour permettre une extraction future, sans payer d'avance le coût du distribué.
-
-## Structure d'un module
-
-Exemple conceptuel :
-
-```text
+inventory/
+ordering/
 catalog/
-├── <API publique du module>
-└── internal/
-    ├── domain/
-    ├── application/
-    └── adapter/
-        ├── in/
-        │   └── web/
-        └── out/
-            └── persistence/
+identity/
 ```
 
-### API publique du module
+Cela augmente la cohésion et réduit les navigations inutiles.
 
-Le package racine du module contient uniquement ce que les autres modules sont autorisés à utiliser.
+---
 
-Il peut exposer plus tard :
+## 🌐 Pourquoi pas des microservices ?
 
-- façades ;
-- commandes publiques ;
-- résultats publics ;
-- événements métier explicitement partagés.
+Cellar n'a actuellement aucune raison de payer le coût de :
 
-Les autres modules ne doivent pas entrer directement dans `internal`.
+- réseau inter-services ;
+- cohérence distribuée ;
+- versioning d'API interne ;
+- observabilité distribuée ;
+- déploiements multiples ;
+- gestion de pannes partielles.
 
-### internal/domain
+Le Modulith fournit des frontières fortes sans introduire cette complexité.
 
-Contient le modèle métier pur :
+> Si un domaine doit un jour être extrait, ses frontières fonctionnelles sont déjà explicites.
 
-- entités métier ;
-- value objects ;
-- enums ;
-- invariants ;
-- règles métier.
+---
 
-Il ne dépend pas de Spring MVC, JPA, PostgreSQL, Redis ou JWT.
+## 🧪 Vérification automatique
 
-### internal/application
+Spring Modulith vérifie :
 
-Contient :
+- les frontières des modules ;
+- les accès aux packages internes ;
+- les dépendances ;
+- les cycles.
 
-- cas d'usage ;
-- orchestration ;
-- ports entrants/sortants ;
-- transactions applicatives.
-
-Cette couche coordonne le domaine mais ne doit pas connaître les détails techniques des adapters.
-
-### internal/adapter/in
-
-Ce qui entre dans le module :
-
-- HTTP ;
-- REST ;
-- éventuellement messages ou tâches planifiées.
-
-Pour le web, on y placera plus tard :
-
-- Controllers ;
-- Request DTO ;
-- Response DTO ;
-- mapping HTTP.
-
-### internal/adapter/out
-
-Ce qui permet au module de parler au monde extérieur :
-
-- persistence JPA ;
-- Redis ;
-- génération de documents ;
-- stockage de fichiers ;
-- API externes.
-
-Les adapters implémentent des ports définis vers l'intérieur.
-
-## Sens des dépendances
-
-```mermaid
-flowchart LR
-    AIN[Adapter entrant] --> APP[Application]
-    APP --> DOMAIN[Domain]
-    APP --> PORT[Port]
-    AOUT[Adapter sortant] --> PORT
-    AOUT --> TECH[(DB / Redis / API externe)]
-```
-
-Le domaine n'a aucune raison de connaître les adapters.
-
-## Collaboration entre modules
-
-Un module ne doit pas utiliser les classes internes d'un autre module.
-
-Mauvais :
+Le test principal est :
 
 ```text
-ordering
-  └── appelle directement
-      catalog.internal.adapter.out.persistence.ProductEntity
+ModulithArchitectureTest
 ```
 
-Correct :
+ArchUnit peut compléter ces règles si des contraintes internes plus fines deviennent nécessaires.
+
+---
+
+## 🗃️ Persistence
+
+PostgreSQL reste la **source de vérité transactionnelle**.
+
+Principes :
+
+- Flyway possède le schéma ;
+- Hibernate utilise `ddl-auto: validate` ;
+- chaque module garde ses adapters de persistence près de son métier ;
+- pas de package global `data` qui connaîtrait tous les domaines.
+
+---
+
+## 🧰 Où placer une technologie ?
+
+Une technologie n'est pas automatiquement un module métier.
+
+Exemples :
 
 ```text
-ordering
-  └── appelle
-      catalog.<API publique>
-```
-
-Lorsque le découplage temporel apporte une vraie valeur, les modules pourront aussi collaborer par événements.
-
-## Rôle de Spring Modulith
-
-Spring Modulith servira à :
-
-- détecter les modules applicatifs ;
-- vérifier leurs frontières ;
-- détecter les cycles ;
-- empêcher les accès non souhaités aux packages internes ;
-- tester les modules de manière ciblée ;
-- documenter les dépendances entre modules ;
-- gérer proprement certains événements inter-modules.
-
-Les frontières ne reposent donc pas uniquement sur une convention humaine.
-
-## Rôle d'ArchUnit
-
-ArchUnit peut compléter Spring Modulith pour les règles internes qui ne sont pas exprimées directement par le modèle de modules.
-
-Exemples futurs :
-
-- `domain` ne dépend pas de JPA ;
-- un Controller ne manipule pas une Entity JPA ;
-- les adapters sortants ne sont pas appelés directement depuis un autre module.
-
-## Persistence
-
-PostgreSQL reste la source de vérité transactionnelle.
-
-Chaque module possède ses adapters de persistence près de son métier.
-
-On évite un énorme package global `data` qui connaîtrait tous les domaines.
-
-Flyway gérera le schéma de manière versionnée.
-
-## Redis, sécurité, PDF, WebSocket...
-
-Une technologie n'est pas un domaine métier.
-
-On ne créera donc pas automatiquement des modules `redis`, `pdf` ou `websocket`.
-
-Ces technologies apparaîtront comme adapters du module qui en a besoin.
-
-Exemples futurs :
-
-```text
-inventory/internal/adapter/out/cache/
 identity/internal/adapter/out/security/
+inventory/internal/adapter/out/cache/
 ordering/internal/adapter/out/document/
 ```
 
-Un module transversal ne sera créé que s'il représente une vraie capacité partagée avec un contrat clair.
+Redis, PDF ou WebSocket deviennent des adapters du domaine qui en a réellement besoin.
 
-## Règles de conception
+---
+
+## 📏 Règles de conception
 
 1. Le découpage principal est métier.
 2. Un module possède son propre modèle interne.
@@ -233,12 +269,14 @@ Un module transversal ne sera créé que s'il représente une vraie capacité pa
 5. Le domaine reste indépendant des frameworks.
 6. Les technologies restent dans les adapters.
 7. Toute dépendance inter-module doit avoir une raison métier.
-8. Aucun nouveau module n'est créé uniquement pour ranger une bibliothèque.
-9. Les cycles entre modules sont interdits.
-10. Les règles sont vérifiées automatiquement.
+8. Les cycles entre modules sont interdits.
+9. Les règles importantes sont automatisées par des tests.
+10. Une nouvelle abstraction doit simplifier le système, pas seulement le rendre plus sophistiqué.
 
-## Évolution
+---
 
-Cette architecture permet de commencer simplement.
+## 📚 Lire ensuite
 
-Si un jour un domaine nécessite un cycle de déploiement ou une scalabilité réellement indépendante, ses frontières fonctionnelles seront déjà définies. Une extraction en service séparé devient alors un choix d'exploitation, pas une réécriture préalable du métier.
+- [Modules métier](DOMAINS.md)
+- [Pratiques professionnelles](PROFESSIONAL_PRACTICES.md)
+- [Sécurité](SECURITY.md)

@@ -44,7 +44,6 @@ flowchart LR
     DB[(PostgreSQL)]
 
     CLIENT --> CELLAR
-
     C --> DB
     I --> DB
     O --> DB
@@ -101,8 +100,6 @@ Le domaine ne connaît ni HTTP, ni JPA, ni PostgreSQL, ni Spring Security.
 
 `Product` représente **ce qui est vendu**, pas le stock physique.
 
-Un produit conserve notamment son nom, son type, son volume, son prix et son état actif.
-
 ### Inventory
 
 `Batch` représente un **lot physique réel**.
@@ -114,47 +111,26 @@ Product "Hydromel Classique"
 └── LOT-2026-003
 ```
 
-Le module distingue :
-
-- le stock physique ;
-- le stock réservé ;
-- le stock disponible ;
-- les mouvements physiques immuables ;
-- les allocations de stock aux lignes de commande.
-
 L'allocation suit **FEFO — First Expired, First Out** : les lots qui expirent le plus tôt sont consommés en priorité.
 
 ### Ordering
-
-Une commande suit actuellement le cycle :
 
 ```text
 DRAFT → CONFIRMED → PREPARING → SHIPPED
    └──────────────→ CANCELLED
 ```
 
-Chaque `OrderLine` conserve un snapshot du **nom** et du **prix unitaire** du produit au moment de la commande. Une modification future du catalogue ne réécrit donc jamais l'histoire commerciale.
+Chaque `OrderLine` conserve un snapshot du **nom** et du **prix unitaire** du produit au moment de la commande.
 
 ### Identity
 
-Le module Identity fournit :
-
-- inscription et connexion ;
-- rôles `USER` et `ADMIN` ;
-- BCrypt pour les mots de passe ;
-- access tokens JWT courts ;
-- refresh tokens opaques avec rotation ;
-- stockage uniquement du hash SHA-256 des refresh tokens ;
-- soft delete des comptes ;
-- bootstrap optionnel du premier administrateur.
+Le module Identity fournit l'inscription, la connexion, les rôles `USER` / `ADMIN`, BCrypt, les JWT courts, les refresh tokens opaques avec rotation et le soft delete des comptes.
 
 ---
 
 ## 🔐 Sécurité
 
 Cellar fonctionne en mode **stateless** avec Spring Security.
-
-Politique actuelle :
 
 | Ressource | Accès |
 | --- | --- |
@@ -173,27 +149,27 @@ Le JWT se transmet avec :
 Authorization: Bearer <access-token>
 ```
 
-Swagger expose également le bouton **Authorize** pour tester directement les endpoints protégés.
-
 ---
 
 ## 🗃️ Persistance et traçabilité
 
 PostgreSQL est la source de vérité transactionnelle.
 
-- **Flyway** est seul responsable des migrations ;
+- **Flyway** gère les migrations versionnées ;
 - Hibernate utilise `ddl-auto: validate` ;
-- les contraintes critiques sont aussi protégées au niveau SQL ;
+- les contraintes critiques sont protégées au niveau SQL ;
 - les opérations multi-entités importantes sont transactionnelles ;
-- `StockMovement` sert de ledger immuable pour expliquer les changements de stock ;
-- `Batch`, `Order` et `User` utilisent le soft delete lorsque l'historique doit être conservé ;
-- `Product` utilise une désactivation métier (`active=false`) plutôt qu'une suppression historique.
+- `StockMovement` sert de ledger immuable ;
+- `Batch`, `Order` et `User` utilisent le soft delete ;
+- `Product` utilise une désactivation métier.
+
+Le schéma courant est à la migration **V6**.
 
 ---
 
 ## 🧪 Tests
 
-Le projet contient des tests sur plusieurs niveaux :
+Le projet couvre actuellement :
 
 - invariants du domaine ;
 - services applicatifs ;
@@ -201,8 +177,6 @@ Le projet contient des tests sur plusieurs niveaux :
 - contrôleurs REST avec MockMvc ;
 - authentification et refresh tokens ;
 - frontières Spring Modulith.
-
-Lancer toute la suite :
 
 ```bash
 ./mvnw test
@@ -229,8 +203,6 @@ Sous Windows :
 
 Partir de `.env.example` et renseigner les valeurs locales.
 
-Au minimum :
-
 ```env
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
@@ -245,8 +217,6 @@ JWT_REFRESH_TOKEN_TTL=P7D
 ```
 
 Le `JWT_SECRET` doit être une clé Base64 représentant au moins 256 bits.
-
-Exemple :
 
 ```bash
 openssl rand -base64 32
@@ -282,12 +252,10 @@ Windows :
 .\mvnw.cmd spring-boot:run
 ```
 
-Flyway applique automatiquement les migrations nécessaires au démarrage.
-
 ### 4. Ouvrir Swagger
 
 ```text
-http://localhost:8080/swagger-ui.html
+http://localhost:8080/swagger-ui/index.html
 ```
 
 Flux de test conseillé :
@@ -331,40 +299,26 @@ src/main/java/be/mjodheim/cellar/
     └── internal/
 ```
 
-Chaque module contient sa logique métier, ses cas d'utilisation et ses adapters techniques sans exposer ses détails internes aux autres modules.
-
 ---
 
 ## 📚 Documentation
 
-### Architecture
+| Sujet | Document |
+| --- | --- |
+| Architecture | [ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Modules métier | [DOMAINS.md](docs/DOMAINS.md) |
+| Pratiques professionnelles | [PROFESSIONAL_PRACTICES.md](docs/PROFESSIONAL_PRACTICES.md) |
+| Sécurité | [SECURITY.md](docs/SECURITY.md) |
+| Product | [catalog/PRODUCT.md](docs/catalog/PRODUCT.md) |
+| Batch | [inventory/BATCH.md](docs/inventory/BATCH.md) |
+| StockMovement | [inventory/STOCK_MOVEMENT.md](docs/inventory/STOCK_MOVEMENT.md) |
+| Allocation | [inventory/ALLOCATION.md](docs/inventory/ALLOCATION.md) |
+| Order | [ordering/ORDER.md](docs/ordering/ORDER.md) |
+| OrderLine | [ordering/ORDER_LINE.md](docs/ordering/ORDER_LINE.md) |
+| User | [identity/USER.md](docs/identity/USER.md) |
+| RefreshToken | [identity/REFRESH_TOKEN.md](docs/identity/REFRESH_TOKEN.md) |
 
-- [Architecture détaillée](docs/ARCHITECTURE.md)
-- [Responsabilités des modules](docs/DOMAINS.md)
-- [Pratiques professionnelles retenues](docs/PROFESSIONAL_PRACTICES.md)
-- [Sécurité](docs/SECURITY.md)
-
-### Catalog
-
-- [Product](docs/catalog/PRODUCT.md)
-
-### Inventory
-
-- [Batch](docs/inventory/BATCH.md)
-- [StockMovement](docs/inventory/STOCK_MOVEMENT.md)
-- [Allocation](docs/inventory/ALLOCATION.md)
-
-### Ordering
-
-- [Order](docs/ordering/ORDER.md)
-- [OrderLine](docs/ordering/ORDER_LINE.md)
-
-### Identity
-
-- [User](docs/identity/USER.md)
-- [RefreshToken](docs/identity/REFRESH_TOKEN.md)
-
-Les principales classes et frontières de modules disposent également de **Javadoc** afin qu'un développeur puisse comprendre l'intention du code directement depuis l'IDE.
+Les principales classes, méthodes publiques et frontières de modules disposent également de **Javadoc** directement consultable depuis l'IDE.
 
 ---
 
@@ -389,18 +343,18 @@ Docker
 
 ## 🧱 Principes du projet
 
-Avant d'introduire une nouvelle classe, une dépendance ou un module, deux questions doivent rester simples à répondre :
+Avant d'introduire une nouvelle classe, une dépendance ou un module :
 
 1. **À quel besoin métier cela répond-il ?**
 2. **À quel module cela appartient-il ?**
 
-L'objectif n'est pas d'accumuler des frameworks, mais de conserver un backend **compréhensible, testable, traçable et évolutif**.
+L'objectif est de conserver un backend **compréhensible, testable, traçable et évolutif**.
 
 ---
 
 ## 🛣️ Prochaines étapes
 
-Le socle métier et la sécurité sont maintenant en place. Les prochains chantiers concernent surtout la robustesse de production :
+Le socle métier, la sécurité, la documentation et la Javadoc sont en place. Les prochains chantiers concernent surtout la robustesse de production :
 
 - tests d'intégration PostgreSQL / Testcontainers ;
 - concurrence et verrouillage du stock ;
@@ -412,4 +366,3 @@ Le socle métier et la sécurité sont maintenant en place. Les prochains chanti
 - CI/CD ;
 - dockerisation complète de l'application ;
 - observabilité et stratégie de sauvegarde.
-

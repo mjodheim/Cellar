@@ -1,17 +1,27 @@
-# Pratiques professionnelles retenues
+# 🧱 Pratiques professionnelles retenues
 
-Ce document résume les garde-fous appliqués avant l'ajout de la sécurité.
+> Ce document rassemble les garde-fous actuellement appliqués dans Cellar et les prochains chantiers de robustesse.
 
-## Source de vérité et migrations
+---
 
-- PostgreSQL est la source de vérité transactionnelle.
-- Hibernate est configuré en `ddl-auto: validate`.
-- Flyway est seul responsable de l'évolution du schéma.
-- Les contraintes importantes sont répétées en base lorsque c'est pertinent.
+## 🗃️ Source de vérité et migrations
 
-## Frontières Modulith
+| Élément | Décision |
+| --- | --- |
+| Base transactionnelle | PostgreSQL |
+| Évolution du schéma | Flyway |
+| Hibernate | `ddl-auto: validate` |
+| Contraintes critiques | également protégées en SQL |
 
-Les modules principaux sont :
+Le schéma courant est à la migration **V6**.
+
+Une migration déjà appliquée n'est pas modifiée rétroactivement : toute correction passe par une nouvelle version Flyway.
+
+---
+
+## 🧩 Frontières Modulith
+
+Modules principaux :
 
 ```text
 catalog
@@ -20,83 +30,144 @@ ordering
 identity
 ```
 
-Les collaborations entre modules passent par une API publique à la racine du module :
+Collaborations publiques actuelles :
 
 ```text
-ordering -> catalog.CatalogProducts
-ordering -> inventory.InventoryOperations
+ordering → catalog.CatalogProducts
+ordering → inventory.InventoryOperations
 ```
 
-Les classes `internal` d'un module ne doivent pas être utilisées depuis un autre module.
+Les classes `internal` restent privées au module.
 
-Un test `ModulithArchitectureTest` vérifie automatiquement les frontières et les cycles.
+`ModulithArchitectureTest` vérifie automatiquement les dépendances et les cycles.
 
-## Soft delete
+---
+
+## 🗑️ Soft delete et désactivation
 
 Le soft delete est utilisé lorsqu'une suppression physique ferait perdre de la traçabilité.
 
-Il est déjà appliqué à :
+| Objet | Stratégie |
+| --- | --- |
+| `Batch` | soft delete uniquement si stock et réservations = 0 |
+| `Order` | soft delete uniquement en `DRAFT` ou `CANCELLED` |
+| `User` | soft delete + désactivation + révocation des refresh tokens |
+| `Product` | désactivation métier via `active=false` |
 
-- `Batch` : suppression uniquement si stock physique et réservations sont à zéro ;
-- `Order` : suppression uniquement lorsqu'elle est brouillon ou annulée.
+La désactivation d'un produit est volontairement distincte d'une suppression historique.
 
-`Product` possède actuellement une désactivation métier (`active=false`). La désactivation et la suppression logique sont volontairement distinguées : un produit qui n'est plus vendu doit rester référencé par l'historique des commandes et du stock.
+---
 
-## Traçabilité des stocks
+## 📦 Traçabilité du stock
 
-Le stock utilise deux représentations complémentaires :
+Deux représentations complémentaires :
 
-- `Batch` contient l'état courant pour répondre rapidement aux lectures ;
-- `StockMovement` est un ledger immuable qui explique les variations physiques.
+- `Batch` = **état courant** ;
+- `StockMovement` = **historique immuable** des variations physiques.
 
-Les réservations ne sont pas des mouvements physiques : elles sont représentées par `Allocation`.
+Une réservation n'est pas un mouvement physique : elle est représentée par `Allocation`.
 
-## FEFO
+---
 
-Les lots disponibles sont ordonnés par date d'expiration, puis date de réception.
+## ⏳ FEFO
 
-Les lots sans date d'expiration passent après les lots ayant une date.
+Les lots disponibles sont ordonnés selon **First Expired, First Out** :
 
-L'allocation peut répartir une ligne de commande sur plusieurs lots.
+1. date d'expiration ;
+2. date de réception ;
+3. identifiant comme critère stable.
 
-## Snapshot commercial
+Les lots sans date d'expiration passent après les lots qui en possèdent une.
 
-Une `OrderLine` conserve le nom et le prix du produit au moment de la commande.
+Une ligne de commande peut être répartie sur plusieurs lots.
 
-Le catalogue peut donc changer sans réécrire l'histoire commerciale.
+---
 
-## Validation en couches
+## 💶 Snapshot commercial
 
-- l'API valide la forme des entrées ;
-- l'application valide les règles nécessitant des repositories ou plusieurs agrégats ;
-- le domaine protège ses invariants ;
-- PostgreSQL protège les contraintes structurelles critiques.
+Une `OrderLine` conserve :
 
-## Transactions
+- le nom du produit ;
+- le prix unitaire ;
+- la quantité.
+
+Ces valeurs sont figées au moment de la commande.
+
+> Modifier le catalogue aujourd'hui ne réécrit jamais l'histoire commerciale d'hier.
+
+---
+
+## ✅ Validation en couches
+
+| Couche | Responsabilité |
+| --- | --- |
+| API | forme et contraintes HTTP |
+| Application | règles nécessitant repositories ou plusieurs agrégats |
+| Domaine | invariants et transitions d'état |
+| PostgreSQL | contraintes structurelles critiques |
+
+---
+
+## 🔄 Transactions
 
 Les opérations composées sont transactionnelles.
 
 Exemples :
 
-- réception d'un lot + écriture du mouvement de réception ;
+- réception d'un lot + mouvement `RECEIPT` ;
 - confirmation d'une commande + réservations FEFO ;
 - annulation + libération des réservations ;
-- expédition + consommation des allocations + mouvements de sortie.
+- expédition + consommation des allocations + mouvements `SHIPMENT` ;
+- refresh token : révocation de l'ancien + création du nouveau.
 
-## À traiter après validation métier
+---
 
-La sécurité sera ajoutée uniquement après validation du modèle actuel.
+## 🔐 Sécurité
 
-Les étapes professionnelles prévues ensuite comprennent notamment :
+La sécurité est maintenant implémentée :
 
-- authentification et autorisations ;
-- audit de l'utilisateur à l'origine des opérations ;
-- gestion globale et normalisée des erreurs ;
-- pagination et recherche ;
+- Spring Security stateless ;
+- BCrypt ;
+- JWT HS256 ;
+- refresh tokens opaques ;
+- rotation des refresh tokens ;
+- rôles `USER` et `ADMIN` ;
+- bootstrap optionnel du premier administrateur ;
+- secrets uniquement via environnement local.
+
+Voir [SECURITY.md](SECURITY.md).
+
+---
+
+## 📝 Documentation du code
+
+Le projet maintient trois niveaux complémentaires :
+
+1. **README** : comprendre le projet en quelques minutes ;
+2. **docs/** : comprendre les décisions métier et architecturales ;
+3. **Javadoc** : comprendre les classes et méthodes directement dans l'IDE.
+
+---
+
+## 🛣️ Prochains garde-fous
+
+Les prochaines étapes de robustesse sont :
+
+- tests d'intégration avec PostgreSQL réel / Testcontainers ;
+- verrouillage et gestion de concurrence sur le stock ;
 - idempotence des commandes critiques ;
-- verrouillage/concurrence sur le stock ;
-- cache Redis uniquement là où il apporte une vraie valeur ;
+- audit de l'utilisateur à l'origine des opérations ;
+- gestion globale des erreurs ;
+- pagination et recherche ;
+- Redis uniquement là où il apporte une vraie valeur ;
 - rate limiting ;
-- tests d'intégration avec PostgreSQL réel/Testcontainers ;
+- CI/CD ;
 - observabilité ;
-- CI/CD et sauvegardes.
+- stratégie de sauvegarde et restauration.
+
+---
+
+## 📚 Lire ensuite
+
+- [Architecture](ARCHITECTURE.md)
+- [Sécurité](SECURITY.md)

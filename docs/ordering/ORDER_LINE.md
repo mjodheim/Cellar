@@ -1,15 +1,55 @@
-# OrderLine
+# 🧮 OrderLine
 
-`OrderLine` représente une ligne immuable d'une commande.
+> `OrderLine` est une ligne **immuable** représentant le snapshot commercial d'un produit dans une commande.
 
-Elle contient :
+---
 
-- l'identifiant du produit ;
-- le nom du produit au moment de la commande ;
-- la quantité ;
-- le prix unitaire au moment de la commande ;
-- sa date de création.
+## 🧾 Données conservées
 
-Le total de ligne est calculé par `unitPrice × quantity`.
+| Champ | Rôle |
+| --- | --- |
+| `productId` | identifiant du produit |
+| `productName` | nom au moment de la commande |
+| `quantity` | quantité commandée |
+| `unitPrice` | prix au moment de la commande |
+| `createdAt` | création de la ligne |
 
-Une ligne ne référence pas directement la classe interne `Product` du module Catalog. Cette séparation évite de coupler les modèles internes de deux modules.
+---
+
+## 💰 Total
+
+```text
+total = unitPrice × quantity
+```
+
+Le total est calculé à partir des valeurs figées dans la ligne.
+
+---
+
+## 📸 Pourquoi un snapshot ?
+
+Supposons qu'un produit coûte 12 € lors de la commande et passe ensuite à 14 €.
+
+L'ancienne commande doit continuer à afficher **12 €**.
+
+C'est pour cela que la ligne ne dépend pas dynamiquement du prix actuel du catalogue.
+
+---
+
+## 🔒 Immutabilité
+
+Une `OrderLine` ne change pas après sa création.
+
+Cette simplicité facilite :
+
+- la traçabilité ;
+- les calculs historiques ;
+- les audits ;
+- les futures générations de documents.
+
+---
+
+## 🔗 Voir aussi
+
+- [Order](ORDER.md)
+- [Product](../catalog/PRODUCT.md)

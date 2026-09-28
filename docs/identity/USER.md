@@ -1,24 +1,66 @@
-# User
+# 👤 User
 
-`User` représente un compte humain autorisé à utiliser Cellar.
+> `User` représente un compte humain autorisé à utiliser Cellar.
 
-## Responsabilités
+---
 
-Il porte :
+## 🎯 Responsabilité
 
-- l'email normalisé et immuable ;
-- le nom d'affichage ;
-- uniquement le **hash** du mot de passe ;
-- le rôle `USER` ou `ADMIN` ;
-- l'état enabled/disabled ;
-- les dates de création, modification et soft delete.
+Le modèle porte :
 
-Le domaine ne reçoit jamais le mot de passe en clair. Le hash est produit dans un adapter de sécurité avant la création ou la modification du modèle métier.
+| Donnée | Rôle |
+| --- | --- |
+| `email` | identifiant normalisé et immuable |
+| `displayName` | nom affiché |
+| `passwordHash` | hash BCrypt uniquement |
+| `role` | `USER` ou `ADMIN` |
+| `enabled` | autorisation d'authentification |
+| `createdAt` | création |
+| `updatedAt` | dernière modification |
+| `deletedAt` | suppression logique |
 
-## Désactivation et soft delete
+---
 
-`enabled=false` bloque l'authentification tout en conservant le compte.
+## 🔒 Mot de passe
 
-`deletedAt` représente une suppression logique. Un compte soft-deleted est automatiquement désactivé et n'est plus retourné par les repositories métier.
+Le domaine ne reçoit jamais le mot de passe en clair.
 
-Cette distinction permet de conserver la traçabilité future des opérations effectuées par un utilisateur sans maintenir son compte comme actif.
+```mermaid
+flowchart LR
+    RAW[Mot de passe brut] --> HASH[PasswordHashingPort / BCrypt]
+    HASH --> USER[User.passwordHash]
+```
+
+Le mot de passe brut n'est ni stocké ni renvoyé.
+
+---
+
+## ⏸️ Désactivation
+
+```text
+enabled = false
+```
+
+Le compte reste présent mais ne peut plus s'authentifier.
+
+---
+
+## 🗑️ Soft delete
+
+```text
+deletedAt != null
+```
+
+Lors d'un soft delete :
+
+- le compte est désactivé ;
+- il disparaît des lectures métier normales ;
+- ses refresh tokens actifs sont révoqués ;
+- l'historique reste traçable.
+
+---
+
+## 🔗 Voir aussi
+
+- [Sécurité](../SECURITY.md)
+- [RefreshToken](REFRESH_TOKEN.md)

@@ -1,126 +1,148 @@
-# Sécurité de Cellar
+# 🔐 Sécurité de Cellar
 
-## Objectif
+> Cellar utilise une API HTTP **stateless** protégée par Spring Security, avec access tokens JWT courts et refresh tokens opaques.
 
-Cellar utilise une API HTTP stateless protégée par Spring Security.
+---
 
-L'implémentation reprend les concepts étudiés en cours — JWT, BCrypt, rôles, filtres de sécurité — en utilisant les primitives natives actuelles de Spring Security pour éviter une implémentation JWT artisanale.
+## 🧭 Vue d'ensemble
 
-## Architecture
+```mermaid
+flowchart TD
+    CLIENT[Client]
+    AUTH[/api/auth/login]
+    SERVICE[AuthenticationService]
+    BCRYPT[BCrypt]
+    JWT[JWT access token]
+    REFRESH[Refresh token opaque]
+    API[API protégée]
 
-```text
-Client
-  |
-  | POST /api/auth/login
-  v
-AuthenticationService
-  |-- PasswordHashingPort -> BCrypt
-  |-- AccessTokenPort     -> JWT signé
-  '-- RefreshTokenCodec   -> token opaque + hash SHA-256
-
-Requête protégée
-  |
-  | Authorization: Bearer <JWT>
-  v
-Spring Security OAuth2 Resource Server
-  |
-  v
-SecurityContext
-  |
-  v
-Controller
+    CLIENT --> AUTH
+    AUTH --> SERVICE
+    SERVICE --> BCRYPT
+    SERVICE --> JWT
+    SERVICE --> REFRESH
+    CLIENT -->|Authorization: Bearer JWT| API
 ```
 
-## Access token
+---
 
-L'access token est un JWT signé en HS256.
+## 🎟️ Access token
 
-Il contient notamment :
+L'access token est un JWT signé en **HS256**.
 
-- `sub` : email ;
-- `uid` : identifiant utilisateur ;
-- `name` : nom d'affichage ;
-- `roles` : rôles de sécurité ;
-- `iss`, `iat`, `exp`.
+Claims principaux :
 
-La durée par défaut est de 15 minutes.
+| Claim | Contenu |
+| --- | --- |
+| `sub` | email |
+| `uid` | identifiant utilisateur |
+| `name` | nom d'affichage |
+| `roles` | rôles de sécurité |
+| `iss` | issuer |
+| `iat` | date d'émission |
+| `exp` | expiration |
 
-## Secret JWT
+Durée par défaut : **15 minutes**.
 
-Aucun secret n'est versionné.
+---
 
-Le secret est lu depuis :
+## 🔑 Secret JWT
+
+Le secret vient exclusivement de :
 
 ```text
 JWT_SECRET
 ```
 
-Il doit contenir une clé Base64 représentant au minimum 256 bits.
-
-Exemple de génération locale :
+Il doit être une clé Base64 représentant au moins **256 bits**.
 
 ```bash
 openssl rand -base64 32
 ```
 
-La valeur réelle va dans `.env`, jamais dans Git.
+> La valeur réelle reste dans `.env` et n'est jamais versionnée.
 
-## Passwords
+---
 
-Les mots de passe sont hashés avec BCrypt avant d'entrer dans le domaine.
+## 🔒 Mots de passe
 
-Le coût BCrypt est actuellement fixé à 12.
+Les mots de passe sont hashés avec **BCrypt**, coût 12.
 
-Le mot de passe en clair :
+Un mot de passe en clair :
 
 - n'est jamais persisté ;
 - n'est jamais journalisé ;
 - n'est jamais placé dans un JWT ;
-- n'est jamais retourné par l'API.
+- n'est jamais renvoyé par l'API.
 
-## Refresh tokens
+---
 
-Les refresh tokens sont opaques, générés avec `SecureRandom`, persistés uniquement sous forme de hash SHA-256 et tournés à chaque refresh.
+## ♻️ Refresh tokens
 
-Le logout révoque le refresh token présenté.
+Les refresh tokens sont :
 
-Un access token déjà émis reste valide jusqu'à son expiration courte. C'est un compromis volontaire d'une architecture JWT stateless.
-
-## Autorisations
-
-Politique initiale :
-
-```text
-Swagger / OpenAPI              public
-health actuator               public
-register/login/refresh/logout public
-
-lecture Catalog               authenticated
-écriture Catalog              ADMIN
-Inventory                     ADMIN
-Orders                        authenticated
-/api/auth/me                  authenticated
-```
-
-Cette politique sera raffinée lorsque les rôles réels de l'équipe Mjödheim seront définis.
-
-## Administrateur initial
-
-Un premier administrateur peut être créé au démarrage uniquement si les trois variables suivantes sont présentes :
+- opaques ;
+- générés avec `SecureRandom` ;
+- persistés uniquement sous forme de hash SHA-256 ;
+- tournés à chaque refresh ;
+- révocables.
 
 ```text
-BOOTSTRAP_ADMIN_EMAIL
-BOOTSTRAP_ADMIN_NAME
-BOOTSTRAP_ADMIN_PASSWORD
+raw refresh token
+      ↓ SHA-256
+token_hash stocké en base
 ```
 
-Si l'email existe déjà, rien n'est recréé.
+### Rotation
 
-Les credentials de bootstrap ne doivent jamais être ajoutés au dépôt.
+À chaque `POST /api/auth/refresh` :
 
-## Suppression de compte
+1. le token reçu est haché ;
+2. son hash est recherché ;
+3. il doit être actif et non expiré ;
+4. l'ancien token est révoqué ;
+5. un nouveau refresh token est généré ;
+6. un nouvel access token est émis.
 
-La suppression utilisateur est un soft delete.
+---
+
+## 🛡️ Autorisations
+
+| Ressource | Accès |
+| --- | --- |
+| Swagger / OpenAPI | Public |
+| Health actuator | Public |
+| Register / Login / Refresh / Logout | Public |
+| Lecture Catalog | Authentifié |
+| Écriture Catalog | ADMIN |
+| Inventory | ADMIN |
+| Orders | Authentifié |
+| `/api/auth/me` | Authentifié |
+
+---
+
+## 👑 Administrateur initial
+
+Le premier administrateur peut être créé automatiquement au démarrage avec :
+
+```env
+BOOTSTRAP_ADMIN_EMAIL=
+BOOTSTRAP_ADMIN_NAME=
+BOOTSTRAP_ADMIN_PASSWORD=
+```
+
+Le compte est créé uniquement si :
+
+- les trois valeurs sont présentes ;
+- l'email n'existe pas déjà.
+
+> Ces valeurs sont des secrets locaux et ne doivent jamais être commitées.
+
+---
+
+## 🗑️ Suppression de compte
+
+La suppression utilisateur est logique.
 
 Elle :
 
@@ -128,15 +150,22 @@ Elle :
 - désactive le compte ;
 - révoque les refresh tokens encore actifs.
 
-Les access tokens déjà émis expirent naturellement après leur courte durée de vie.
+Les access tokens déjà émis restent valides jusqu'à leur expiration courte.
 
-## Swagger
+---
 
-Swagger déclare le schéma `bearerAuth`.
+## 🧪 Tester avec Swagger
 
-Après un login :
+1. ouvrir `http://localhost:8080/swagger-ui/index.html` ;
+2. appeler `/api/auth/login` ;
+3. copier `accessToken` ;
+4. cliquer sur **Authorize** ;
+5. coller le JWT ;
+6. tester les endpoints protégés.
 
-1. copier `accessToken` ;
-2. cliquer sur **Authorize** ;
-3. saisir le JWT ;
-4. tester les endpoints protégés.
+---
+
+## 📚 Lire ensuite
+
+- [User](identity/USER.md)
+- [RefreshToken](identity/REFRESH_TOKEN.md)

@@ -1,180 +1,116 @@
-# Product
+# 🍯 Product
 
-Ce document décrit le rôle de `Product` dans le module `catalog`.
+> `Product` décrit **ce que Mjödheim vend**. Il ne représente pas le stock physique.
 
-## Rôle
+---
 
-`Product` représente un produit du catalogue Mjödheim.
+## 🎯 Responsabilité
 
-Il décrit **ce que l'on vend**, pas ce qui est physiquement présent en stock.
+Le produit appartient au module **Catalog**.
 
-Le stock réel, les lots, les mouvements et les réservations appartiennent au module `inventory`.
+```text
+Catalog.Product
+      │
+      └── décrit l'offre commerciale
 
-## Données portées par Product
+Inventory.Batch
+      └── décrit le stock physique
+```
 
-La première version de `Product` contient :
+---
 
-- `id` : identifiant du produit ;
-- `name` : nom du produit ;
-- `type` : type de produit, représenté par `ProductType` ;
-- `description` : description libre ;
-- `volumeMl` : contenance en millilitres ;
-- `price` : prix du produit ;
-- `active` : indique si le produit peut encore être utilisé dans le catalogue ;
-- `createdAt` : date de création ;
-- `updatedAt` : date de dernière modification.
+## 🧾 Données principales
 
-## Pourquoi Product n'est pas une Entity JPA
+| Champ | Rôle |
+| --- | --- |
+| `id` | identifiant |
+| `name` | nom commercial |
+| `type` | `MEAD` ou `BEER` |
+| `description` | description libre |
+| `volumeMl` | volume en millilitres |
+| `price` | prix unitaire |
+| `active` | disponibilité dans le catalogue |
+| `createdAt` | création |
+| `updatedAt` | dernière modification |
 
-`Product` appartient au domaine métier.
+---
 
-Il ne contient donc pas d'annotations techniques comme :
+## 🧠 Domaine pur
+
+`Product` n'est pas une Entity JPA.
+
+Il ne contient donc pas :
 
 ```java
 @Entity
 @Table
 @Column
-@Enumerated
 ```
 
-Ces annotations appartiendront plus tard à `ProductEntity`, dans l'adapter de persistence.
+La représentation PostgreSQL appartient à `ProductEntity`, dans l'adapter de persistence.
 
-Cela permet au modèle métier de rester indépendant de PostgreSQL, Hibernate et JPA.
+> Le domaine reste indépendant de Hibernate et PostgreSQL.
 
-## Validation dans Product
+---
 
-`Product` protège lui-même ses invariants.
+## ✅ Invariants
 
-Exemples :
+`Product` garantit notamment :
 
-- le nom ne peut pas être vide ;
-- le type est obligatoire ;
-- le volume doit être supérieur à zéro ;
-- le prix ne peut pas être négatif.
+- nom non vide ;
+- type obligatoire ;
+- volume > 0 ;
+- prix ≥ 0.
 
-L'objectif est qu'un `Product` valide le reste quel que soit son point d'entrée : API REST, import, test ou autre.
+Les règles nécessitant un repository, comme l'unicité du nom, appartiennent à la couche application.
 
-Les validations qui nécessitent de consulter d'autres données n'appartiennent pas directement à `Product`.
+---
 
-Exemple :
+## 🏭 Création vs rehydratation
 
-> Le nom du produit doit être unique.
+### `create(...)`
 
-Cette règle nécessite de consulter le catalogue existant. Elle sera donc vérifiée par un cas d'usage dans la couche `application`.
+Utilisé pour un **nouveau produit** :
 
-## create(...)
+- pas encore d'identifiant ;
+- actif par défaut ;
+- dates initialisées ;
+- invariants vérifiés.
 
-`create(...)` sert à créer un **nouveau produit métier**.
+### `rehydrate(...)`
 
-Exemple conceptuel :
+Utilisé pour reconstruire un produit existant depuis la persistence.
 
-```java
-Product.create(...)
+```mermaid
+flowchart LR
+    DB[(PostgreSQL)] --> ENTITY[ProductEntity]
+    ENTITY --> MAPPER[Mapper]
+    MAPPER --> DOMAIN[Product.rehydrate]
 ```
 
-Lors d'une création :
+---
 
-- l'identifiant peut ne pas encore exister ;
-- le produit est actif par défaut ;
-- `createdAt` et `updatedAt` sont initialisés ;
-- les invariants métier sont vérifiés.
+## ✏️ Modification
 
-## rehydrate(...)
+`changeDetails(...)` modifie les informations éditables et réapplique les invariants du domaine.
 
-`rehydrate(...)` signifie littéralement **reconstruire un objet métier à partir de données déjà existantes**.
+`updatedAt` est mis à jour.
 
-Ce n'est pas une nouvelle création.
+---
 
-Exemple :
+## ⏸️ Désactivation
 
-1. PostgreSQL contient déjà un produit ;
-2. l'adapter de persistence lit une `ProductEntity` ;
-3. le mapper transforme cette Entity en `Product` ;
-4. il appelle `Product.rehydrate(...)`.
+`deactivate(...)` passe `active=false`.
 
-Cela permet de reconstruire le produit avec :
+Le produit n'est pas supprimé physiquement afin de conserver :
 
-- son identifiant existant ;
-- son état actif ou inactif ;
-- sa date de création d'origine ;
-- sa date de dernière modification.
+- les anciennes commandes ;
+- les mouvements de stock ;
+- les références historiques.
 
-Schéma :
+---
 
-```text
-PostgreSQL
-    ↓
-ProductEntity
-    ↓
-mapper
-    ↓
-Product.rehydrate(...)
-    ↓
-Product
-```
+## 🔗 Voir aussi
 
-La différence essentielle est donc :
-
-```text
-create()     = création d'un nouveau produit
-rehydrate()  = reconstruction d'un produit déjà existant
-```
-
-## changeDetails(...)
-
-`changeDetails(...)` modifie les informations éditables d'un produit.
-
-Cette méthode passe à nouveau par les mêmes règles métier afin qu'une modification ne puisse pas rendre le produit invalide.
-
-Elle met également à jour `updatedAt`.
-
-## deactivate(...)
-
-`deactivate(...)` désactive un produit sans le supprimer physiquement.
-
-L'idée est de conserver l'historique.
-
-Un produit déjà utilisé dans une commande ou associé à des mouvements de stock ne devrait généralement pas disparaître de la base simplement parce qu'il n'est plus vendu.
-
-`active = false` permet donc de le retirer du catalogue actif tout en conservant sa trace.
-
-## Pourquoi createdAt et updatedAt sont dans le domaine
-
-Dans cette première conception, ces dates font partie de l'état métier du produit.
-
-Elles permettent de savoir :
-
-- quand le produit a été créé ;
-- quand son état a été modifié pour la dernière fois.
-
-Elles ne sont pas générées implicitement par JPA : le domaine reste maître de son état.
-
-## ProductType
-
-`ProductType` est un enum du domaine.
-
-Exemple :
-
-```java
-public enum ProductType {
-    MEAD,
-    BEER
-}
-```
-
-Il n'a pas besoin de `@Enumerated`.
-
-L'annotation JPA sera placée plus tard sur le champ correspondant de `ProductEntity`, par exemple avec `EnumType.STRING`.
-
-## Responsabilité de Product
-
-En résumé, `Product` doit :
-
-- représenter un produit valide ;
-- protéger ses règles métier internes ;
-- contrôler ses propres changements d'état ;
-- rester indépendant de la persistence ;
-- ne jamais accéder directement à PostgreSQL ;
-- ne jamais dépendre d'un Controller ou d'un DTO HTTP.
-
-`Product` est donc le **modèle métier**, tandis que `ProductEntity` sera sa représentation technique pour la base de données.
+- [Batch](../inventory/BATCH.md)
+- [Architecture](../ARCHITECTURE.md)

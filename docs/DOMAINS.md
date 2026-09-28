@@ -1,74 +1,151 @@
-# Modules métier de Cellar
+# 🧩 Modules métier de Cellar
 
-Le découpage suivant constitue l'hypothèse initiale. Il pourra évoluer lorsque les besoins métier seront mieux connus.
+> Les modules représentent des **capacités métier**, pas des technologies.
 
-## Catalog
+---
 
-**Responsabilité :** décrire ce que Mjödheim propose.
+## 🗺️ Vue rapide
 
-Concepts probables :
+| Module | Question à laquelle il répond |
+| --- | --- |
+| **Catalog** | Qu'est-ce que Mjödheim vend ? |
+| **Inventory** | Qu'est-ce qui existe physiquement et en quelle quantité ? |
+| **Ordering** | Qu'est-ce qui a été commandé et où en est la commande ? |
+| **Identity** | Qui utilise l'application et avec quels droits ? |
 
-- Product ;
-- ProductType ;
-- informations commerciales ;
-- activation/désactivation du catalogue.
+```mermaid
+flowchart LR
+    ORDERING[Ordering] --> CATALOG[Catalog]
+    ORDERING --> INVENTORY[Inventory]
+    IDENTITY[Identity]
+```
 
-Catalog ne porte pas le stock physique.
+---
 
-## Inventory
+## 🍯 Catalog
 
-**Responsabilité :** représenter ce qui existe physiquement et comment les quantités évoluent.
+### Responsabilité
 
-Concepts probables :
+Décrire ce que Mjödheim propose commercialement.
 
-- Batch ;
-- StockMovement ;
-- Allocation ;
-- quantité disponible ;
-- réservation ;
-- FEFO ;
-- ajustements de stock.
+### Concepts actuels
 
-Inventory ne décide pas du cycle de vie complet d'une commande.
+- `Product`
+- `ProductType`
+- nom, description, volume, prix
+- activation / désactivation
 
-## Ordering
+### Ce que Catalog ne fait pas
 
-**Responsabilité :** représenter ce que le client commande et son évolution.
+Catalog ne porte **pas** le stock physique.
 
-Concepts probables :
+> Un produit peut exister dans le catalogue alors qu'aucun lot n'est disponible.
 
-- Order ;
-- OrderLine ;
-- statuts ;
-- confirmation ;
-- préparation ;
-- expédition ;
-- annulation.
+---
 
-Ordering collaborera avec Catalog et Inventory via leurs API publiques.
+## 📦 Inventory
 
-## Identity
+### Responsabilité
 
-**Responsabilité :** savoir qui utilise l'application et ce qu'il est autorisé à faire.
+Représenter le stock physique et expliquer ses variations.
 
-Concepts probables :
+### Concepts actuels
 
-- User ;
-- Role ;
-- authentification ;
-- autorisations ;
-- identité utilisée pour l'audit.
+- `Batch`
+- `StockMovement`
+- `Allocation`
+- quantité physique
+- quantité réservée
+- quantité disponible
+- FEFO
+- soft delete de lot
 
-Les détails JWT, BCrypt ou Spring Security seront des mécanismes techniques internes, pas le domaine lui-même.
+### Relations importantes
 
-## Modules futurs possibles
+```text
+Product
+  ↓
+Batch
+  ├── StockMovement
+  └── Allocation ← OrderLine
+```
 
-Ils ne sont **pas créés aujourd'hui**.
+Inventory ne contrôle pas le cycle de vie complet d'une commande.
 
-Selon l'évolution réelle du produit, on pourra éventuellement identifier des capacités comme :
+---
+
+## 🧾 Ordering
+
+### Responsabilité
+
+Représenter une commande et ses transitions métier.
+
+### Concepts actuels
+
+- `Order`
+- `OrderLine`
+- `OrderStatus`
+- confirmation
+- préparation
+- expédition
+- annulation
+- soft delete
+
+### Collaboration
+
+```text
+Ordering → CatalogProducts
+Ordering → InventoryOperations
+```
+
+Ordering dépend uniquement des **API publiques** des autres modules.
+
+---
+
+## 👤 Identity
+
+### Responsabilité
+
+Représenter les comptes utilisateurs et fournir les capacités d'authentification.
+
+### Concepts actuels
+
+- `User`
+- `Role`
+- `RefreshToken`
+- comptes enabled / disabled
+- soft delete
+- authentification
+- autorisations
+
+### Mécanismes techniques
+
+Les éléments suivants sont des détails d'adapter, pas le domaine lui-même :
+
+- BCrypt ;
+- JWT ;
+- SHA-256 ;
+- Spring Security ;
+- OAuth2 Resource Server.
+
+---
+
+## 🔭 Modules futurs possibles
+
+Ils ne sont créés que lorsqu'un vrai besoin métier autonome apparaît.
+
+Exemples possibles :
 
 - reporting ;
-- notification ;
-- document management.
+- notifications ;
+- documents ;
+- facturation.
 
-On ne les ajoutera que lorsqu'ils auront une responsabilité métier autonome et des frontières claires.
+> On ne crée pas un module uniquement pour ranger une bibliothèque ou une technologie.
+
+---
+
+## 📚 Lire ensuite
+
+- [Architecture](ARCHITECTURE.md)
+- [Pratiques professionnelles](PROFESSIONAL_PRACTICES.md)

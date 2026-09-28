@@ -1,22 +1,29 @@
-# RefreshToken
+# ♻️ RefreshToken
 
-Cellar utilise deux types de jetons :
+> Le refresh token prolonge une session sans allonger excessivement la durée de vie du JWT d'accès.
+
+---
+
+## 🎟️ Deux jetons complémentaires
+
+| Jeton | Durée | Usage |
+| --- | --- | --- |
+| **Access token JWT** | courte | authentifier les appels API |
+| **Refresh token opaque** | longue | obtenir une nouvelle paire de jetons |
 
 ```text
-Access token JWT
-    durée courte
-    envoyé dans Authorization: Bearer ...
+Access token
+└── Authorization: Bearer <JWT>
 
-Refresh token opaque
-    durée longue
-    utilisé uniquement pour obtenir une nouvelle paire de jetons
+Refresh token
+└── POST /api/auth/refresh
 ```
 
-Le refresh token est aléatoire et opaque : il ne contient aucune donnée métier.
+---
 
-## Stockage
+## 🔐 Stockage
 
-Le token brut n'est jamais stocké dans PostgreSQL.
+Le token brut n'est **jamais** persisté.
 
 Cellar stocke uniquement :
 
@@ -24,17 +31,36 @@ Cellar stocke uniquement :
 SHA-256(rawRefreshToken)
 ```
 
-Ainsi une fuite de la table des refresh tokens ne permet pas de réutiliser directement les valeurs stockées.
+Une fuite de la table ne permet donc pas d'utiliser directement les valeurs stockées comme refresh tokens.
 
-## Rotation
+---
 
-À chaque appel à `/api/auth/refresh` :
+## 🔄 Rotation
 
-1. le refresh token présenté est haché ;
-2. le hash est retrouvé en base ;
-3. le token doit être actif et non expiré ;
-4. l'ancien token est révoqué ;
-5. un nouveau refresh token est généré ;
-6. un nouvel access token JWT est émis.
+À chaque refresh :
 
-La rotation limite la durée d'utilité d'un refresh token compromis.
+```mermaid
+flowchart TD
+    A[Refresh token reçu] --> B[SHA-256]
+    B --> C[Recherche en base]
+    C --> D{Actif et non expiré ?}
+    D -->|non| E[401]
+    D -->|oui| F[Révocation ancien token]
+    F --> G[Nouveau refresh token]
+    G --> H[Nouveau JWT]
+```
+
+---
+
+## 🚪 Logout
+
+Le logout révoque le refresh token présenté.
+
+L'access token JWT déjà émis reste valide jusqu'à son expiration courte, ce qui est cohérent avec l'architecture stateless retenue.
+
+---
+
+## 🔗 Voir aussi
+
+- [Sécurité](../SECURITY.md)
+- [User](USER.md)

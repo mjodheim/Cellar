@@ -1,23 +1,55 @@
-# Allocation
+# 🔗 Allocation
 
-`Allocation` représente l'affectation d'une quantité d'un lot à une ligne de commande.
+> `Allocation` représente l'affectation d'une quantité d'un `Batch` à une `OrderLine`.
 
-Elle relie donc :
+---
 
-```text
-OrderLine -> Allocation -> Batch
+## 🧭 Relation
+
+```mermaid
+flowchart LR
+    LINE[OrderLine] --> ALLOC[Allocation]
+    ALLOC --> BATCH[Batch]
 ```
 
-sans faire dépendre directement le domaine Inventory des classes internes du module Ordering.
+Inventory ne dépend donc pas directement des classes internes de Ordering.
 
-## États
+---
 
-- `RESERVED` : la quantité est réservée ;
-- `RELEASED` : la réservation a été annulée/libérée ;
-- `CONSUMED` : la réservation a été consommée par l'expédition.
+## 🔄 États
 
-Seule une allocation `RESERVED` peut passer vers `RELEASED` ou `CONSUMED`.
+| État | Signification |
+| --- | --- |
+| `RESERVED` | quantité réservée |
+| `RELEASED` | réservation libérée |
+| `CONSUMED` | réservation consommée par l'expédition |
 
-## Pourquoi une entité séparée ?
+Transition autorisée :
 
-Une ligne de commande peut être satisfaite par plusieurs lots. L'allocation rend ce lien explicite et permet de reconstruire exactement quels lots ont été utilisés pour quelle commande.
+```text
+RESERVED ──> RELEASED
+    └──────> CONSUMED
+```
+
+Une allocation déjà libérée ou consommée ne change plus d'état.
+
+---
+
+## 🧩 Pourquoi une entité séparée ?
+
+Une ligne de commande peut être satisfaite par plusieurs lots.
+
+```text
+OrderLine : 12 unités
+├── Batch A → 5
+└── Batch B → 7
+```
+
+L'allocation permet donc de reconstruire exactement **quels lots ont servi à quelle commande**.
+
+---
+
+## 🔗 Voir aussi
+
+- [Batch](BATCH.md)
+- [OrderLine](../ordering/ORDER_LINE.md)

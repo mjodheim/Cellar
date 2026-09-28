@@ -1,26 +1,55 @@
-# StockMovement
+# 📚 StockMovement
 
-`StockMovement` est l'écriture de **ledger** qui explique pourquoi le stock physique a changé.
+> `StockMovement` est le **ledger immuable** qui explique pourquoi le stock physique a changé.
 
-Il est volontairement immuable : un mouvement historique ne doit pas être réécrit après coup.
+---
 
-## Types
+## 🎯 Pourquoi un ledger ?
 
-- `RECEIPT` : réception de stock ;
-- `SHIPMENT` : expédition ;
-- `ADJUSTMENT_IN` : correction positive ;
-- `ADJUSTMENT_OUT` : correction négative ;
-- `WASTE` : perte/casse/périmé ;
-- `RETURN` : retour en stock.
+```text
+Batch.quantityOnHand
+└── répond à : "Combien reste-t-il ?"
 
-Chaque mouvement référence un lot, une quantité positive, une date d'occurrence et éventuellement une référence externe et une note.
+StockMovement
+└── répond à : "Pourquoi cette quantité a-t-elle changé ?"
+```
 
-La direction du mouvement est portée par son type, ce qui évite les quantités signées ambiguës.
+Les deux sont complémentaires : état courant rapide + historique auditable.
 
-## Pourquoi un ledger ?
+---
 
-Le champ de quantité courante sur `Batch` répond rapidement à « combien reste-t-il ? ».
+## 🧾 Types de mouvements
 
-Le ledger `StockMovement` répond à « pourquoi cette quantité est-elle devenue ce qu'elle est ? ».
+| Type | Signification |
+| --- | --- |
+| `RECEIPT` | réception |
+| `SHIPMENT` | expédition |
+| `ADJUSTMENT_IN` | correction positive |
+| `ADJUSTMENT_OUT` | correction négative |
+| `WASTE` | perte, casse ou périmé |
+| `RETURN` | retour en stock |
 
-En contexte professionnel, les deux sont utiles : état courant rapide + historique auditable.
+---
+
+## ➕ Quantités positives
+
+La quantité est toujours strictement positive.
+
+La direction du mouvement est portée par le type, pas par un signe `+` ou `-`.
+
+Cela évite les ambiguïtés.
+
+---
+
+## 🔒 Immutabilité
+
+Un mouvement historique n'est pas réécrit après coup.
+
+S'il faut corriger le stock, on crée un **nouveau mouvement** qui explique la correction.
+
+---
+
+## 🔗 Voir aussi
+
+- [Batch](BATCH.md)
+- [Allocation](ALLOCATION.md)
