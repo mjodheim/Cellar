@@ -21,6 +21,7 @@ class OpaqueRefreshTokenCodec implements RefreshTokenCodec {
     private static final int TOKEN_BYTES = 32;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    /** {@inheritDoc} */
     @Override
     public GeneratedRefreshToken generate() {
         byte[] bytes = new byte[TOKEN_BYTES];
@@ -29,6 +30,7 @@ class OpaqueRefreshTokenCodec implements RefreshTokenCodec {
         return new GeneratedRefreshToken(raw, hash(raw));
     }
 
+    /** {@inheritDoc} */
     @Override
     public String hash(String rawToken) {
         if (rawToken == null || rawToken.isBlank()) {

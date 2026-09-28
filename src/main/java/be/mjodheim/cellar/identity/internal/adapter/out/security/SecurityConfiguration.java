@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -34,11 +33,23 @@ import java.util.Base64;
 @EnableMethodSecurity
 class SecurityConfiguration {
 
+    /**
+     * Provides the BCrypt encoder used for password storage and verification.
+     *
+     * @return password encoder configured with work factor 12
+     */
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
+    /**
+     * Decodes and validates the HMAC signing key from configuration.
+     *
+     * @param encodedSecret Base64-encoded JWT secret
+     * @return HS256-compatible secret key
+     * @throws IllegalStateException when the secret is missing, malformed or too short
+     */
     @Bean
     SecretKey jwtSecretKey(@Value("${cellar.security.jwt.secret}") String encodedSecret) {
         if (encodedSecret == null || encodedSecret.isBlank()) {
@@ -59,6 +70,12 @@ class SecurityConfiguration {
         return new SecretKeySpec(decoded, "HmacSHA256");
     }
 
+    /**
+     * Creates the JWT encoder used to issue access tokens.
+     *
+     * @param key HMAC signing key
+     * @return configured JWT encoder
+     */
     @Bean
     JwtEncoder jwtEncoder(SecretKey key) {
         return NimbusJwtEncoder.withSecretKey(key)
@@ -66,6 +83,13 @@ class SecurityConfiguration {
                 .build();
     }
 
+    /**
+     * Creates the JWT decoder and issuer validator used for authenticated requests.
+     *
+     * @param key HMAC signing key
+     * @param issuer expected token issuer
+     * @return configured JWT decoder
+     */
     @Bean
     JwtDecoder jwtDecoder(
             SecretKey key,
@@ -80,6 +104,11 @@ class SecurityConfiguration {
         return decoder;
     }
 
+    /**
+     * Maps the custom {@code roles} JWT claim to Spring Security authorities.
+     *
+     * @return JWT authentication converter using the {@code ROLE_} prefix
+     */
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
@@ -91,6 +120,14 @@ class SecurityConfiguration {
         return converter;
     }
 
+    /**
+     * Configures stateless endpoint authorization and JWT resource-server processing.
+     *
+     * @param http Spring Security HTTP configuration
+     * @param authenticationConverter converter for JWT roles
+     * @return configured security filter chain
+     * @throws Exception when Spring Security cannot build the filter chain
+     */
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,

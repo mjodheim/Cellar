@@ -9,11 +9,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * OpenAPI metadata and reusable Bearer JWT authentication scheme.
+ * Central OpenAPI metadata and reusable Bearer JWT authentication scheme.
  */
 @Configuration
 class OpenApiConfig {
 
+    /**
+     * Builds the OpenAPI document exposed by Springdoc.
+     *
+     * @return configured OpenAPI model including the global Bearer security scheme
+     */
     @Bean
     OpenAPI cellarOpenApi() {
         return new OpenAPI()

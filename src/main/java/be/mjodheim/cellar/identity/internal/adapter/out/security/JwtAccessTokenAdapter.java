@@ -22,6 +22,13 @@ class JwtAccessTokenAdapter implements AccessTokenPort {
     private final String issuer;
     private final Duration ttl;
 
+    /**
+     * Creates the JWT issuing adapter.
+     *
+     * @param jwtEncoder Spring Security JWT encoder
+     * @param issuer configured token issuer
+     * @param ttl configured access-token lifetime
+     */
     JwtAccessTokenAdapter(
             JwtEncoder jwtEncoder,
             @Value("${cellar.security.jwt.issuer}") String issuer,
@@ -32,6 +39,7 @@ class JwtAccessTokenAdapter implements AccessTokenPort {
         this.ttl = ttl;
     }
 
+    /** {@inheritDoc} */
     @Override
     public String generate(User user) {
         Instant now = Instant.now();
@@ -48,6 +56,7 @@ class JwtAccessTokenAdapter implements AccessTokenPort {
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
+    /** {@inheritDoc} */
     @Override
     public long expiresInSeconds() {
         return ttl.toSeconds();

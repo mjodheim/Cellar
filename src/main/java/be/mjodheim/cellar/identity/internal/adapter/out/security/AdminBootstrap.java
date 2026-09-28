@@ -28,6 +28,9 @@ class AdminBootstrap implements ApplicationRunner {
     private final String displayName;
     private final String password;
 
+    /**
+     * Creates the bootstrap component from repositories and environment-backed properties.
+     */
     AdminBootstrap(
             UserRepository userRepository,
             PasswordHashingPort passwordHashingPort,
@@ -42,6 +45,12 @@ class AdminBootstrap implements ApplicationRunner {
         this.password = password;
     }
 
+    /**
+     * Creates the initial administrator only when all bootstrap settings are present
+     * and the configured email does not already exist.
+     *
+     * @param args Spring Boot application arguments
+     */
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
