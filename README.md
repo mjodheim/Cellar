@@ -1,38 +1,35 @@
 # Cellar
 
-Cellar est une application de gestion de cave, de stock et de commandes destinée à Mjödheim.
+> Backend de gestion de cave, de stock et de commandes pour **Mjödheim**, construit comme un monolithe modulaire avec Spring Boot et Spring Modulith.
 
-Le projet est conçu comme un **monolithe modulaire** avec **Spring Modulith** : une seule application Spring Boot à déployer, mais des frontières métier explicites et vérifiables entre les modules.
+Cellar centralise le catalogue, les lots physiques, les mouvements de stock, les réservations FEFO, les commandes et les identités dans une seule application, tout en conservant des frontières métier explicites et testables.
 
-## Problème métier
+---
 
-Cellar doit fournir une source de vérité unique pour répondre notamment à ces questions :
+## ✨ Ce que fait Cellar
 
-- quels produits existent ;
-- quels lots sont réellement présents ;
-- quelle quantité est disponible ou réservée ;
+Cellar sert de **source de vérité métier** pour répondre à des questions très concrètes :
+
+- quels produits sont proposés ;
+- quels lots sont réellement en cave ;
+- combien d'unités sont en stock, disponibles ou réservées ;
 - pourquoi le stock a changé ;
-- quels lots sont affectés à une commande ;
-- quels lots doivent être consommés en priorité ;
-- qui a effectué une opération ;
-- peut-on reconstruire l'historique complet d'un mouvement.
+- quels lots ont été affectés à une commande ;
+- quel lot doit être consommé en priorité selon FEFO ;
+- quel était le nom et le prix d'un produit au moment d'une ancienne commande ;
+- qui peut accéder à l'application et avec quels droits.
 
-## Modules métier
+Le projet privilégie la **traçabilité**, les **règles métier explicites**, les **transactions cohérentes** et une architecture qui reste lisible lorsqu'il grandit.
 
-Le découpage initial est volontairement orienté **métier** :
+---
 
-- **catalog** — ce que Mjödheim propose : produits, types, informations commerciales ;
-- **inventory** — ce qui existe physiquement : lots, stock, mouvements, allocations, FEFO ;
-- **ordering** — ce qui est commandé : commandes, lignes, cycle de vie ;
-- **identity** — qui utilise Cellar : utilisateurs, rôles, authentification et autorisations.
+## 🧭 Architecture
 
-D'autres modules ne seront ajoutés que lorsqu'un besoin métier réel les justifiera.
-
-## Vue d'ensemble
+Cellar est un **monolithe modulaire** : une seule application à déployer, mais plusieurs modules métier isolés.
 
 ```mermaid
 flowchart LR
-    U[Client / utilisateur]
+    CLIENT[Client / Swagger]
 
     subgraph CELLAR[Cellar · Spring Modulith]
         C[Catalog]
@@ -40,31 +37,25 @@ flowchart LR
         O[Ordering]
         ID[Identity]
 
-        C --> I
-        O --> C
-        O --> I
-        O --> ID
+        O -->|CatalogProducts| C
+        O -->|InventoryOperations| I
     end
 
     DB[(PostgreSQL)]
-    R[(Redis)]
-    EXT[Services externes]
 
-    U --> CELLAR
+    CLIENT --> CELLAR
+
     C --> DB
     I --> DB
     O --> DB
     ID --> DB
-    I -. cache / quotas .-> R
-    ID -. sécurité / quotas .-> R
-    CELLAR -. adapters .-> EXT
 ```
 
-Les flèches représentent des dépendances ou collaborations autorisées au niveau conceptuel. Elles devront être matérialisées par des API de module explicites et vérifiées par Spring Modulith et les tests d'architecture.
+Les collaborations entre modules passent par des **API publiques explicites**. Les packages `internal` restent des détails d'implémentation propres à leur module.
 
-## Clean Architecture à l'intérieur d'un module
+Un test d'architecture Spring Modulith vérifie automatiquement les frontières et les cycles.
 
-Chaque module métier suit la même logique :
+### Clean Architecture dans chaque module
 
 ```text
 module
@@ -72,130 +63,196 @@ module
 └── internal
     ├── domain
     ├── application
+    │   └── port
     └── adapter
         ├── in
         │   └── web
         └── out
-            └── persistence
+            ├── persistence
+            └── security
 ```
 
-Flux type :
+Flux typique :
 
 ```mermaid
 flowchart LR
     HTTP[HTTP / REST] --> IN[Adapter entrant]
-    IN --> APP[Application / use case]
-    APP --> DOM[Domain]
+    IN --> APP[Application / Use case]
+    APP --> DOMAIN[Domain]
     APP --> PORT[Port sortant]
     PORT --> OUT[Adapter sortant]
     OUT --> DB[(PostgreSQL)]
 ```
 
-Le **Domain** ne connaît ni HTTP, ni JPA, ni PostgreSQL, ni Redis. Les dépendances techniques restent aux bords.
+Le domaine ne connaît ni HTTP, ni JPA, ni PostgreSQL, ni Spring Security.
 
-## Pourquoi un Modulith ?
+---
 
-Cellar a besoin de frontières métier fortes, mais ne justifie pas plusieurs applications distribuées.
+## 🧩 Modules métier
 
-Le monolithe modulaire permet de garder :
+| Module | Responsabilité |
+| --- | --- |
+| **Catalog** | Produits proposés par Mjödheim, type, prix, état actif/inactif |
+| **Inventory** | Lots physiques, stock disponible/réservé, mouvements, allocations, FEFO |
+| **Ordering** | Commandes, lignes, snapshots commerciaux et cycle de vie |
+| **Identity** | Utilisateurs, rôles, authentification, JWT, refresh tokens et soft delete |
 
-- un seul déploiement ;
-- une seule configuration ;
-- des transactions simples et fiables ;
-- un développement local facile ;
-- des modules métier isolés ;
-- des dépendances vérifiables ;
-- une extraction future d'un module si elle devient réellement nécessaire.
+### Catalog
 
-On évite ainsi les coûts d'un système distribué sans revenir à un monolithe où tout peut appeler tout.
+`Product` représente **ce qui est vendu**, pas le stock physique.
 
-## Structure cible
+Un produit conserve notamment son nom, son type, son volume, son prix et son état actif.
+
+### Inventory
+
+`Batch` représente un **lot physique réel**.
 
 ```text
-src/main/java/be/mjodheim/cellar/
-├── CellarApplication.java
-├── catalog/
-│   └── internal/
-│       ├── domain/
-│       ├── application/
-│       └── adapter/
-│           ├── in/web/
-│           └── out/persistence/
-├── inventory/
-│   └── internal/
-│       ├── domain/
-│       ├── application/
-│       └── adapter/
-│           ├── in/web/
-│           └── out/persistence/
-├── ordering/
-│   └── internal/
-│       ├── domain/
-│       ├── application/
-│       └── adapter/
-│           ├── in/web/
-│           └── out/persistence/
-└── identity/
-    └── internal/
-        ├── domain/
-        ├── application/
-        └── adapter/
-            ├── in/web/
-            └── out/persistence/
+Product "Hydromel Classique"
+├── LOT-2026-001
+├── LOT-2026-002
+└── LOT-2026-003
 ```
 
-> Les dossiers sont présents dès maintenant comme squelette architectural. Aucun code métier n'y est encore ajouté.
+Le module distingue :
 
-## Documentation
+- le stock physique ;
+- le stock réservé ;
+- le stock disponible ;
+- les mouvements physiques immuables ;
+- les allocations de stock aux lignes de commande.
 
-- [Architecture détaillée](docs/ARCHITECTURE.md)
-- [Responsabilités des modules métier](docs/DOMAINS.md)
+L'allocation suit **FEFO — First Expired, First Out** : les lots qui expirent le plus tôt sont consommés en priorité.
 
-## Principe directeur
+### Ordering
 
-Avant d'ajouter une classe ou une dépendance, on doit pouvoir répondre à deux questions :
+Une commande suit actuellement le cycle :
 
-1. **À quel besoin métier répond-elle ?**
-2. **À quel module appartient-elle ?**
+```text
+DRAFT → CONFIRMED → PREPARING → SHIPPED
+   └──────────────→ CANCELLED
+```
 
-Le code doit suivre le métier, pas l'inverse.
+Chaque `OrderLine` conserve un snapshot du **nom** et du **prix unitaire** du produit au moment de la commande. Une modification future du catalogue ne réécrit donc jamais l'histoire commerciale.
 
+### Identity
 
-## Documentation métier détaillée
+Le module Identity fournit :
 
-- [Product](docs/catalog/PRODUCT.md)
-- [Batch](docs/inventory/BATCH.md)
-- [StockMovement](docs/inventory/STOCK_MOVEMENT.md)
-- [Allocation](docs/inventory/ALLOCATION.md)
-- [Order](docs/ordering/ORDER.md)
-- [OrderLine](docs/ordering/ORDER_LINE.md)
-- [Pratiques professionnelles retenues](docs/PROFESSIONAL_PRACTICES.md)
-
-
-## Sécurité et identité
-
-Cellar utilise Spring Security en mode stateless avec :
-
+- inscription et connexion ;
+- rôles `USER` et `ADMIN` ;
+- BCrypt pour les mots de passe ;
 - access tokens JWT courts ;
 - refresh tokens opaques avec rotation ;
-- BCrypt pour les mots de passe ;
-- rôles `USER` et `ADMIN` ;
+- stockage uniquement du hash SHA-256 des refresh tokens ;
 - soft delete des comptes ;
-- Swagger configuré avec Bearer authentication.
+- bootstrap optionnel du premier administrateur.
 
-Avant de démarrer l'application après activation de la sécurité, renseigner au minimum dans le `.env` :
+---
 
-```env
-JWT_SECRET=<clé Base64 de 32 octets minimum>
+## 🔐 Sécurité
+
+Cellar fonctionne en mode **stateless** avec Spring Security.
+
+Politique actuelle :
+
+| Ressource | Accès |
+| --- | --- |
+| Swagger / OpenAPI | Public |
+| Health check | Public |
+| Register / Login / Refresh / Logout | Public |
+| Lecture Catalog | Authentifié |
+| Écriture Catalog | ADMIN |
+| Inventory | ADMIN |
+| Orders | Authentifié |
+| `/api/auth/me` | Authentifié |
+
+Le JWT se transmet avec :
+
+```http
+Authorization: Bearer <access-token>
 ```
 
-Une clé locale peut être générée avec :
+Swagger expose également le bouton **Authorize** pour tester directement les endpoints protégés.
+
+---
+
+## 🗃️ Persistance et traçabilité
+
+PostgreSQL est la source de vérité transactionnelle.
+
+- **Flyway** est seul responsable des migrations ;
+- Hibernate utilise `ddl-auto: validate` ;
+- les contraintes critiques sont aussi protégées au niveau SQL ;
+- les opérations multi-entités importantes sont transactionnelles ;
+- `StockMovement` sert de ledger immuable pour expliquer les changements de stock ;
+- `Batch`, `Order` et `User` utilisent le soft delete lorsque l'historique doit être conservé ;
+- `Product` utilise une désactivation métier (`active=false`) plutôt qu'une suppression historique.
+
+---
+
+## 🧪 Tests
+
+Le projet contient des tests sur plusieurs niveaux :
+
+- invariants du domaine ;
+- services applicatifs ;
+- mappers et adapters de persistence ;
+- contrôleurs REST avec MockMvc ;
+- authentification et refresh tokens ;
+- frontières Spring Modulith.
+
+Lancer toute la suite :
+
+```bash
+./mvnw test
+```
+
+Sous Windows :
+
+```powershell
+.\mvnw.cmd test
+```
+
+---
+
+## 🚀 Démarrage local
+
+### Prérequis
+
+- Java **26**
+- Docker / Docker Compose
+- PostgreSQL via le compose local
+- Maven Wrapper fourni dans le dépôt
+
+### 1. Créer le fichier `.env`
+
+Partir de `.env.example` et renseigner les valeurs locales.
+
+Au minimum :
+
+```env
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=
+POSTGRES_USER=
+POSTGRES_PASSWORD=
+
+JWT_SECRET=
+JWT_ISSUER=cellar
+JWT_ACCESS_TOKEN_TTL=PT15M
+JWT_REFRESH_TOKEN_TTL=P7D
+```
+
+Le `JWT_SECRET` doit être une clé Base64 représentant au moins 256 bits.
+
+Exemple :
 
 ```bash
 openssl rand -base64 32
 ```
 
-Pour créer automatiquement le premier administrateur au démarrage, renseigner aussi :
+Pour créer automatiquement le premier administrateur :
 
 ```env
 BOOTSTRAP_ADMIN_EMAIL=
@@ -203,10 +260,156 @@ BOOTSTRAP_ADMIN_NAME=
 BOOTSTRAP_ADMIN_PASSWORD=
 ```
 
-Les valeurs réelles ne doivent jamais être commitées.
+> Les vraies valeurs restent exclusivement dans `.env`, qui est ignoré par Git.
 
-Documentation détaillée :
+### 2. Démarrer PostgreSQL
 
+```bash
+docker compose -f compose.local.yaml up -d
+```
+
+### 3. Lancer Cellar
+
+Linux / macOS :
+
+```bash
+./mvnw spring-boot:run
+```
+
+Windows :
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Flyway applique automatiquement les migrations nécessaires au démarrage.
+
+### 4. Ouvrir Swagger
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+Flux de test conseillé :
+
+```text
+Login ADMIN
+    ↓
+Authorize dans Swagger
+    ↓
+Créer un Product
+    ↓
+Réceptionner un Batch
+    ↓
+Créer une Order
+    ↓
+Confirm → réservation FEFO
+    ↓
+Prepare
+    ↓
+Ship → consommation du stock + StockMovement
+```
+
+---
+
+## 📁 Structure principale
+
+```text
+src/main/java/be/mjodheim/cellar/
+├── CellarApplication.java
+├── OpenApiConfig.java
+├── catalog/
+│   ├── CatalogProducts.java
+│   ├── CatalogProductView.java
+│   └── internal/
+├── inventory/
+│   ├── InventoryOperations.java
+│   └── internal/
+├── ordering/
+│   └── internal/
+└── identity/
+    └── internal/
+```
+
+Chaque module contient sa logique métier, ses cas d'utilisation et ses adapters techniques sans exposer ses détails internes aux autres modules.
+
+---
+
+## 📚 Documentation
+
+### Architecture
+
+- [Architecture détaillée](docs/ARCHITECTURE.md)
+- [Responsabilités des modules](docs/DOMAINS.md)
+- [Pratiques professionnelles retenues](docs/PROFESSIONAL_PRACTICES.md)
 - [Sécurité](docs/SECURITY.md)
+
+### Catalog
+
+- [Product](docs/catalog/PRODUCT.md)
+
+### Inventory
+
+- [Batch](docs/inventory/BATCH.md)
+- [StockMovement](docs/inventory/STOCK_MOVEMENT.md)
+- [Allocation](docs/inventory/ALLOCATION.md)
+
+### Ordering
+
+- [Order](docs/ordering/ORDER.md)
+- [OrderLine](docs/ordering/ORDER_LINE.md)
+
+### Identity
+
 - [User](docs/identity/USER.md)
 - [RefreshToken](docs/identity/REFRESH_TOKEN.md)
+
+Les principales classes et frontières de modules disposent également de **Javadoc** afin qu'un développeur puisse comprendre l'intention du code directement depuis l'IDE.
+
+---
+
+## 🛠️ Stack technique
+
+```text
+Java 26
+Spring Boot 4
+Spring Modulith
+Spring Security
+Spring Data JPA / Hibernate
+PostgreSQL
+Flyway
+Springdoc OpenAPI / Swagger UI
+JUnit 5
+Mockito
+Maven
+Docker
+```
+
+---
+
+## 🧱 Principes du projet
+
+Avant d'introduire une nouvelle classe, une dépendance ou un module, deux questions doivent rester simples à répondre :
+
+1. **À quel besoin métier cela répond-il ?**
+2. **À quel module cela appartient-il ?**
+
+L'objectif n'est pas d'accumuler des frameworks, mais de conserver un backend **compréhensible, testable, traçable et évolutif**.
+
+---
+
+## 🛣️ Prochaines étapes
+
+Le socle métier et la sécurité sont maintenant en place. Les prochains chantiers concernent surtout la robustesse de production :
+
+- tests d'intégration PostgreSQL / Testcontainers ;
+- concurrence et verrouillage du stock ;
+- idempotence des opérations critiques ;
+- audit utilisateur ;
+- gestion globale et normalisée des erreurs ;
+- pagination et recherche ;
+- Redis et rate limiting lorsque leur utilité est démontrée ;
+- CI/CD ;
+- dockerisation complète de l'application ;
+- observabilité et stratégie de sauvegarde.
+
