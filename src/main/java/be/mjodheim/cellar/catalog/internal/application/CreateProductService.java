@@ -10,6 +10,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Service
+/**
+ * Creates catalogue products and enforces application-level uniqueness rules.
+ */
 public class CreateProductService {
 
     private final ProductRepository productRepository;

@@ -8,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+/**
+ * Read-only catalogue use cases for listing and retrieving products.
+ */
 public class ProductQueryService {
 
     private final ProductRepository productRepository;

@@ -12,6 +12,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 @Service
+/**
+ * Receives a physical batch and records the corresponding immutable receipt movement
+ * in the same transaction.
+ */
 public class ReceiveBatchService {
 
     private final BatchRepository batchRepository;

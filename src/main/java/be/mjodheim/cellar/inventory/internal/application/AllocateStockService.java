@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+/**
+ * Allocates available stock to an order line using FEFO ordering supplied by the repository.
+ */
 public class AllocateStockService {
 
     private final BatchRepository batchRepository;

@@ -10,6 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
+/**
+ * Read-only Inventory use cases for batches and their stock-movement history.
+ */
 public class InventoryQueryService {
 
     private final BatchRepository batchRepository;
