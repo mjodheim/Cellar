@@ -4,6 +4,7 @@ import be.mjodheim.cellar.catalog.internal.application.port.ProductRepository;
 import be.mjodheim.cellar.catalog.internal.domain.Product;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -26,6 +27,13 @@ class ProductPersistenceAdapter implements ProductRepository {
     public Optional<Product> findById(Long id) {
         return repository.findById(id)
                 .map(ProductPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public List<Product> findAll() {
+        return repository.findAllByOrderByIdAsc().stream()
+                .map(ProductPersistenceMapper::toDomain)
+                .toList();
     }
 
     @Override
