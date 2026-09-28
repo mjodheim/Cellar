@@ -17,6 +17,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/inventory")
 @Tag(name = "Inventory", description = "Gestion des lots et des mouvements de stock")
+/**
+ * REST adapter exposing batch reception, stock queries and batch lifecycle operations.
+ */
 class InventoryController {
 
     private final ReceiveBatchService receiveBatchService;

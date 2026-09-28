@@ -16,6 +16,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/orders")
 @Tag(name = "Orders", description = "Gestion des commandes")
+/**
+ * REST adapter exposing order creation, queries and lifecycle transitions.
+ */
 class OrderController {
 
     private final CreateOrderService createOrderService;

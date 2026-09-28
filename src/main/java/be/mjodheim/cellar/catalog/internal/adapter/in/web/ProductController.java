@@ -29,6 +29,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/catalog/products")
 @Tag(name = "Products", description = "Gestion du catalogue produit")
+/**
+ * REST adapter exposing catalogue product use cases.
+ */
 class ProductController {
 
     private final CreateProductService createProductService;
