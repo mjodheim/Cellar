@@ -9,6 +9,18 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
+/**
+ * HTTP payload used to create a catalogue product.
+ *
+ * <p>Bean Validation protects the shape of the request. Business invariants are
+ * still enforced by the domain model.</p>
+ *
+ * @param name product name
+ * @param type product family
+ * @param description optional commercial description
+ * @param volumeMl container volume in millilitres
+ * @param price unit price, zero or positive
+ */
 record ProductCreateRequest(
 
         @NotBlank

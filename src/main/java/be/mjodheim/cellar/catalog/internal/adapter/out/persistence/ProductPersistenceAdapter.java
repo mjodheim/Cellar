@@ -7,6 +7,12 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Persistence adapter implementing the Catalog application's product repository port.
+ *
+ * <p>All conversion between JPA entities and domain objects is delegated to
+ * {@link ProductPersistenceMapper}.</p>
+ */
 @Repository
 class ProductPersistenceAdapter implements ProductRepository {
 
@@ -16,6 +22,7 @@ class ProductPersistenceAdapter implements ProductRepository {
         this.repository = repository;
     }
 
+    /** {@inheritDoc} */
     @Override
     public Product save(Product product) {
         ProductEntity entity = ProductPersistenceMapper.toEntity(product);
@@ -23,12 +30,14 @@ class ProductPersistenceAdapter implements ProductRepository {
         return ProductPersistenceMapper.toDomain(saved);
     }
 
+    /** {@inheritDoc} */
     @Override
     public Optional<Product> findById(Long id) {
         return repository.findById(id)
                 .map(ProductPersistenceMapper::toDomain);
     }
 
+    /** {@inheritDoc} */
     @Override
     public List<Product> findAll() {
         return repository.findAllByOrderByIdAsc().stream()
@@ -36,6 +45,7 @@ class ProductPersistenceAdapter implements ProductRepository {
                 .toList();
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean existsByNameIgnoreCase(String name) {
         return repository.existsByNameIgnoreCase(name);

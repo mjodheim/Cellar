@@ -6,6 +6,12 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * JPA persistence representation of a catalogue product.
+ *
+ * <p>The entity mirrors the database schema and intentionally remains separate
+ * from the pure domain object {@code Product}.</p>
+ */
 @Entity
 @Table(name = "product")
 class ProductEntity {
@@ -39,9 +45,15 @@ class ProductEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /**
+     * Constructor required by JPA.
+     */
     protected ProductEntity() {
     }
 
+    /**
+     * Builds a persistence entity from explicit stored values.
+     */
     ProductEntity(
             Long id,
             String name,
@@ -64,39 +76,13 @@ class ProductEntity {
         this.updatedAt = updatedAt;
     }
 
-    Long id() {
-        return id;
-    }
-
-    String name() {
-        return name;
-    }
-
-    ProductType type() {
-        return type;
-    }
-
-    String description() {
-        return description;
-    }
-
-    int volumeMl() {
-        return volumeMl;
-    }
-
-    BigDecimal price() {
-        return price;
-    }
-
-    boolean active() {
-        return active;
-    }
-
-    Instant createdAt() {
-        return createdAt;
-    }
-
-    Instant updatedAt() {
-        return updatedAt;
-    }
+    Long id() { return id; }
+    String name() { return name; }
+    ProductType type() { return type; }
+    String description() { return description; }
+    int volumeMl() { return volumeMl; }
+    BigDecimal price() { return price; }
+    boolean active() { return active; }
+    Instant createdAt() { return createdAt; }
+    Instant updatedAt() { return updatedAt; }
 }
