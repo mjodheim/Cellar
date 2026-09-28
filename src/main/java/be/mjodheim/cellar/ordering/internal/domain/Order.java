@@ -6,6 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Ordering aggregate controlling the lifecycle of a customer order.
+ *
+ * <p>The aggregate owns its lines, status transitions and soft-delete rules.
+ * Stock allocation itself is delegated to the Inventory module through its
+ * public module API.</p>
+ */
 public final class Order {
 
     private final Long id;

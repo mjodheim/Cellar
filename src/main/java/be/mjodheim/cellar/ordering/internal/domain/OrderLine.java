@@ -4,6 +4,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 
+/**
+ * Immutable commercial snapshot of a product inside an order.
+ *
+ * <p>The product name and unit price are copied at order creation time so
+ * historical orders remain accurate even if the catalogue changes later.</p>
+ */
 public final class OrderLine {
 
     private final Long id;
