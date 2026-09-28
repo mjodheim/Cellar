@@ -32,6 +32,16 @@ public class AuthenticationService {
     private final RefreshTokenCodec refreshTokenCodec;
     private final Duration refreshTokenTtl;
 
+    /**
+     * Creates the authentication use-case service.
+     *
+     * @param userRepository user persistence port
+     * @param refreshTokenRepository refresh-token persistence port
+     * @param passwordHashingPort password hashing boundary
+     * @param accessTokenPort access-token issuing boundary
+     * @param refreshTokenCodec refresh-token generation and hashing boundary
+     * @param refreshTokenTtl configured refresh-token lifetime
+     */
     public AuthenticationService(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository,
@@ -48,7 +58,15 @@ public class AuthenticationService {
         this.refreshTokenTtl = refreshTokenTtl;
     }
 
-    /** Registers a regular USER account and returns its first token pair. */
+    /**
+     * Registers a regular USER account and returns its first token pair.
+     *
+     * @param email requested email
+     * @param displayName user-facing display name
+     * @param rawPassword clear-text password supplied for this request only
+     * @return authentication result containing the first access and refresh tokens
+     * @throws EmailAlreadyRegisteredException when the email is already used
+     */
     @Transactional
     public AuthenticationResult register(String email, String displayName, String rawPassword) {
         String normalizedEmail = normalizeEmail(email);
@@ -68,7 +86,14 @@ public class AuthenticationService {
         return issueSession(userRepository.save(user), now);
     }
 
-    /** Authenticates an enabled, non-deleted account. */
+    /**
+     * Authenticates an enabled, non-deleted account.
+     *
+     * @param email account email
+     * @param rawPassword submitted clear-text password
+     * @return fresh authentication result
+     * @throws InvalidCredentialsException when authentication fails
+     */
     @Transactional
     public AuthenticationResult login(String email, String rawPassword) {
         User user = userRepository.findByEmail(normalizeEmail(email))
@@ -82,7 +107,13 @@ public class AuthenticationService {
         return issueSession(user, Instant.now());
     }
 
-    /** Rotates a valid refresh token and returns a fresh token pair. */
+    /**
+     * Rotates a valid refresh token and returns a fresh token pair.
+     *
+     * @param rawRefreshToken raw opaque refresh token
+     * @return refreshed authentication result
+     * @throws InvalidRefreshTokenException when the token is unknown, expired, revoked or belongs to an unavailable user
+     */
     @Transactional
     public AuthenticationResult refresh(String rawRefreshToken) {
         Instant now = Instant.now();
@@ -102,7 +133,13 @@ public class AuthenticationService {
         return issueSession(user, now);
     }
 
-    /** Revokes the supplied refresh token if present. Logout is intentionally idempotent. */
+    /**
+     * Revokes the supplied refresh token if present.
+     *
+     * <p>Logout is intentionally idempotent.</p>
+     *
+     * @param rawRefreshToken token to revoke
+     */
     @Transactional
     public void logout(String rawRefreshToken) {
         String hash = refreshTokenCodec.hash(rawRefreshToken);

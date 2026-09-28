@@ -9,7 +9,28 @@ import java.util.Optional;
  * Persistence port for refresh-token state.
  */
 public interface RefreshTokenRepository {
+
+    /**
+     * Persists a refresh-token record.
+     *
+     * @param token token state to save
+     * @return persisted token
+     */
     RefreshToken save(RefreshToken token);
+
+    /**
+     * Finds a token by its stored hash.
+     *
+     * @param tokenHash SHA-256 hexadecimal hash
+     * @return matching token or an empty optional
+     */
     Optional<RefreshToken> findByTokenHash(String tokenHash);
+
+    /**
+     * Lists currently active refresh tokens for one user.
+     *
+     * @param userId user identifier
+     * @return active refresh tokens
+     */
     List<RefreshToken> findActiveByUserId(Long userId);
 }

@@ -17,6 +17,12 @@ public class UserAccountService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    /**
+     * Creates the account service.
+     *
+     * @param userRepository user persistence port
+     * @param refreshTokenRepository refresh-token persistence port
+     */
     public UserAccountService(
             UserRepository userRepository,
             RefreshTokenRepository refreshTokenRepository
@@ -25,14 +31,24 @@ public class UserAccountService {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    /** Returns the current non-deleted account. */
+    /**
+     * Returns the current non-deleted account.
+     *
+     * @param email authenticated principal email
+     * @return matching user account
+     * @throws UserNotFoundException when the account no longer exists
+     */
     @Transactional(readOnly = true)
     public User findCurrent(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
     }
 
-    /** Soft-deletes the account and revokes all still-active refresh tokens. */
+    /**
+     * Soft-deletes the account and revokes all still-active refresh tokens.
+     *
+     * @param email authenticated principal email
+     */
     @Transactional
     public void deleteCurrent(String email) {
         User user = findCurrent(email);
