@@ -26,12 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/catalog/products")
-@Tag(name = "Products", description = "Gestion du catalogue produit")
 /**
  * REST adapter exposing catalogue product use cases.
  */
+@RestController
+@RequestMapping("/api/catalog/products")
+@Tag(name = "Products", description = "Gestion du catalogue produit")
 class ProductController {
 
     private final CreateProductService createProductService;
@@ -45,6 +45,12 @@ class ProductController {
         this.productQueryService = productQueryService;
     }
 
+    /**
+     * Creates a new catalogue product.
+     *
+     * @param request validated creation payload
+     * @return HTTP 201 response containing the created product
+     */
     @PostMapping
     @Operation(summary = "Créer un produit")
     @ApiResponses({
@@ -78,6 +84,11 @@ class ProductController {
                 .body(ProductResponse.from(product));
     }
 
+    /**
+     * Lists all catalogue products.
+     *
+     * @return product response list
+     */
     @GetMapping
     @Operation(summary = "Lister les produits")
     @ApiResponse(responseCode = "200", description = "Liste des produits")
@@ -87,6 +98,12 @@ class ProductController {
                 .toList();
     }
 
+    /**
+     * Retrieves one product by identifier.
+     *
+     * @param id product identifier
+     * @return matching product response
+     */
     @GetMapping("/{id}")
     @Operation(summary = "Récupérer un produit par son identifiant")
     @ApiResponses({
@@ -105,6 +122,12 @@ class ProductController {
         return ProductResponse.from(productQueryService.findById(id));
     }
 
+    /**
+     * Maps duplicate-product errors to HTTP 409.
+     *
+     * @param exception application exception
+     * @return RFC 9457-style problem details
+     */
     @ExceptionHandler(ProductAlreadyExistsException.class)
     ProblemDetail handleProductAlreadyExists(ProductAlreadyExistsException exception) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
@@ -113,6 +136,12 @@ class ProductController {
         return problem;
     }
 
+    /**
+     * Maps missing-product errors to HTTP 404.
+     *
+     * @param exception application exception
+     * @return RFC 9457-style problem details
+     */
     @ExceptionHandler(ProductNotFoundException.class)
     ProblemDetail handleProductNotFound(ProductNotFoundException exception) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);

@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/inventory")
-@Tag(name = "Inventory", description = "Gestion des lots et des mouvements de stock")
 /**
  * REST adapter exposing batch reception, stock queries and batch lifecycle operations.
  */
+@RestController
+@RequestMapping("/api/inventory")
+@Tag(name = "Inventory", description = "Gestion des lots et des mouvements de stock")
 class InventoryController {
 
     private final ReceiveBatchService receiveBatchService;
@@ -36,6 +36,12 @@ class InventoryController {
         this.lifecycleService = lifecycleService;
     }
 
+    /**
+     * Receives a new physical batch.
+     *
+     * @param request validated reception payload
+     * @return HTTP 201 response containing the created batch
+     */
     @PostMapping("/batches")
     @Operation(summary = "Réceptionner un lot")
     @ApiResponse(responseCode = "201", description = "Lot créé et mouvement de réception enregistré")
@@ -53,12 +59,24 @@ class InventoryController {
                 .body(BatchResponse.from(batch));
     }
 
+    /**
+     * Retrieves one non-deleted batch.
+     *
+     * @param id batch identifier
+     * @return matching batch response
+     */
     @GetMapping("/batches/{id}")
     @Operation(summary = "Consulter un lot")
     BatchResponse findById(@PathVariable Long id) {
         return BatchResponse.from(queryService.findBatchById(id));
     }
 
+    /**
+     * Lists available product batches in FEFO order.
+     *
+     * @param productId product identifier
+     * @return available batches
+     */
     @GetMapping("/products/{productId}/batches")
     @Operation(summary = "Lister les lots disponibles d'un produit selon l'ordre FEFO")
     List<BatchResponse> findForProduct(@PathVariable Long productId) {
@@ -67,6 +85,12 @@ class InventoryController {
                 .toList();
     }
 
+    /**
+     * Lists the movement ledger for a batch.
+     *
+     * @param id batch identifier
+     * @return ordered movement responses
+     */
     @GetMapping("/batches/{id}/movements")
     @Operation(summary = "Consulter l'historique des mouvements d'un lot")
     List<StockMovementResponse> movements(@PathVariable Long id) {
@@ -75,6 +99,11 @@ class InventoryController {
                 .toList();
     }
 
+    /**
+     * Soft-deletes an empty batch.
+     *
+     * @param id batch identifier
+     */
     @DeleteMapping("/batches/{id}")
     @Operation(summary = "Supprimer logiquement un lot vide")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -82,6 +111,9 @@ class InventoryController {
         lifecycleService.softDelete(id);
     }
 
+    /**
+     * Maps missing-batch errors to HTTP 404.
+     */
     @ExceptionHandler(BatchNotFoundException.class)
     ProblemDetail handleNotFound(BatchNotFoundException exception) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
@@ -90,6 +122,9 @@ class InventoryController {
         return problem;
     }
 
+    /**
+     * Maps duplicate-batch errors to HTTP 409.
+     */
     @ExceptionHandler(BatchAlreadyExistsException.class)
     ProblemDetail handleConflict(BatchAlreadyExistsException exception) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
@@ -98,6 +133,9 @@ class InventoryController {
         return problem;
     }
 
+    /**
+     * Maps Inventory rule violations to HTTP 422.
+     */
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     ProblemDetail handleBusinessError(RuntimeException exception) {
         ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.UNPROCESSABLE_ENTITY);
