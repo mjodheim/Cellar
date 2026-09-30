@@ -52,7 +52,7 @@ public class AllocationLifecycleService {
         Instant now = Instant.now();
 
         for (Allocation allocation : activeAllocations(orderLineId)) {
-            Batch batch = batchRepository.findById(allocation.batchId())
+            Batch batch = batchRepository.findByIdForUpdate(allocation.batchId())
                     .orElseThrow(() -> new BatchNotFoundException(allocation.batchId()));
 
             batch.release(allocation.quantity(), now);
@@ -73,7 +73,7 @@ public class AllocationLifecycleService {
         Instant now = Instant.now();
 
         for (Allocation allocation : activeAllocations(orderLineId)) {
-            Batch batch = batchRepository.findById(allocation.batchId())
+            Batch batch = batchRepository.findByIdForUpdate(allocation.batchId())
                     .orElseThrow(() -> new BatchNotFoundException(allocation.batchId()));
 
             batch.shipReserved(allocation.quantity(), now);
@@ -94,7 +94,7 @@ public class AllocationLifecycleService {
     }
 
     private List<Allocation> activeAllocations(Long orderLineId) {
-        return allocationRepository.findByOrderLineId(orderLineId).stream()
+        return allocationRepository.findByOrderLineIdForUpdate(orderLineId).stream()
                 .filter(a -> a.status() == AllocationStatus.RESERVED)
                 .toList();
     }

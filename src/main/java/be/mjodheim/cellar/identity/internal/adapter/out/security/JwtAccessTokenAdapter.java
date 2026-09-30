@@ -45,7 +45,8 @@ class JwtAccessTokenAdapter implements AccessTokenPort {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer(issuer)
-                .subject(user.email())
+                .subject(user.id().toString())
+                .claim("email", user.email())
                 .issuedAt(now)
                 .expiresAt(now.plus(ttl))
                 .claim("uid", user.id())

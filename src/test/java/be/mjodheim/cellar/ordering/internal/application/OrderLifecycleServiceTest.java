@@ -28,7 +28,7 @@ class OrderLifecycleServiceTest {
     @Test
     void shouldAllocateStockWhenConfirming() {
         Order order = persistedDraft();
-        when(orderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Order result = new OrderLifecycleService(orderRepository, inventoryOperations).confirm(10L);
@@ -42,7 +42,7 @@ class OrderLifecycleServiceTest {
         Order order = persistedDraft();
         order.confirm(Instant.parse("2026-09-28T13:00:00Z"));
 
-        when(orderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Order result = new OrderLifecycleService(orderRepository, inventoryOperations).cancel(10L);
@@ -57,7 +57,7 @@ class OrderLifecycleServiceTest {
         order.confirm(Instant.parse("2026-09-28T13:00:00Z"));
         order.startPreparation(Instant.parse("2026-09-28T14:00:00Z"));
 
-        when(orderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Order result = new OrderLifecycleService(orderRepository, inventoryOperations).ship(10L);

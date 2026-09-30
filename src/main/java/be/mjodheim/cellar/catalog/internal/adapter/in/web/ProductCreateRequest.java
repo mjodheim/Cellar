@@ -2,6 +2,7 @@ package be.mjodheim.cellar.catalog.internal.adapter.in.web;
 
 import be.mjodheim.cellar.catalog.internal.domain.ProductType;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -38,6 +39,7 @@ record ProductCreateRequest(
 
         @NotNull
         @DecimalMin(value = "0.00")
+        @Digits(integer = 8, fraction = 2)
         BigDecimal price
 ) {
 }

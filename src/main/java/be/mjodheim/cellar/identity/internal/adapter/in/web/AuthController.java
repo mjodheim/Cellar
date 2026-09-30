@@ -72,7 +72,7 @@ class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Consulter le profil authentifié")
     UserProfileResponse me(Authentication authentication) {
-        return UserProfileResponse.from(userAccountService.findCurrent(authentication.getName()));
+        return UserProfileResponse.from(userAccountService.findCurrent(Long.valueOf(authentication.getName())));
     }
 
     @DeleteMapping("/me")
@@ -80,7 +80,7 @@ class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     @Operation(summary = "Supprimer logiquement le compte authentifié")
     void deleteMe(Authentication authentication) {
-        userAccountService.deleteCurrent(authentication.getName());
+        userAccountService.deleteCurrent(Long.valueOf(authentication.getName()));
     }
 
     @ExceptionHandler(EmailAlreadyRegisteredException.class)

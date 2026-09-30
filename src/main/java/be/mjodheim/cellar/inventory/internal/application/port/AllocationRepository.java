@@ -24,4 +24,7 @@ public interface AllocationRepository {
      * @return allocations in stable repository order
      */
     List<Allocation> findByOrderLineId(Long orderLineId);
+
+    /** Locks allocations before releasing or consuming them. */
+    List<Allocation> findByOrderLineIdForUpdate(Long orderLineId);
 }

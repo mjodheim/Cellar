@@ -39,4 +39,14 @@ class RefreshTokenPersistenceAdapter implements RefreshTokenRepository {
                 .map(IdentityPersistenceMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public Optional<Long> findUserIdByTokenHash(String tokenHash) {
+        return repository.findUserIdByTokenHash(tokenHash);
+    }
+
+    @Override
+    public Optional<RefreshToken> findByTokenHashForUpdate(String tokenHash) {
+        return repository.findByTokenHashForUpdate(tokenHash).map(IdentityPersistenceMapper::toDomain);
+    }
 }

@@ -38,4 +38,9 @@ class OrderPersistenceAdapter implements OrderRepository {
                 .map(OrderPersistenceMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public Optional<Order> findByIdForUpdate(Long id) {
+        return repository.findByIdForUpdate(id).map(OrderPersistenceMapper::toDomain);
+    }
 }

@@ -109,11 +109,11 @@ class AuthControllerTest {
                 null
         );
 
-        when(userAccountService.findCurrent("user@example.com")).thenReturn(user);
+        when(userAccountService.findCurrent(1L)).thenReturn(user);
 
         mockMvc.perform(get("/api/auth/me")
                         .principal(new UsernamePasswordAuthenticationToken(
-                                "user@example.com",
+                                "1",
                                 null
                         )))
                 .andExpect(status().isOk())

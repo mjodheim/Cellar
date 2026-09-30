@@ -44,4 +44,14 @@ class UserPersistenceAdapter implements UserRepository {
     public boolean existsByEmail(String email) {
         return repository.existsByEmailIgnoreCaseAndDeletedAtIsNull(email);
     }
+
+    @Override
+    public Optional<User> findByIdForUpdate(Long id) {
+        return repository.findByIdForUpdate(id).map(IdentityPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public Optional<User> findByEmailForUpdate(String email) {
+        return repository.findByEmailForUpdate(email).map(IdentityPersistenceMapper::toDomain);
+    }
 }

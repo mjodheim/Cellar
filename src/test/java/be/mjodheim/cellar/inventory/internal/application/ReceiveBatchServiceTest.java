@@ -1,5 +1,7 @@
 package be.mjodheim.cellar.inventory.internal.application;
 
+import be.mjodheim.cellar.catalog.CatalogProducts;
+import be.mjodheim.cellar.catalog.ProductNotFoundException;
 import be.mjodheim.cellar.inventory.internal.application.port.BatchRepository;
 import be.mjodheim.cellar.inventory.internal.application.port.StockMovementRepository;
 import be.mjodheim.cellar.inventory.internal.domain.Batch;
@@ -20,10 +22,11 @@ class ReceiveBatchServiceTest {
 
     @Mock BatchRepository batchRepository;
     @Mock StockMovementRepository movementRepository;
+    @Mock CatalogProducts catalogProducts;
 
     @Test
     void shouldSaveBatchAndReceiptMovement() {
-        ReceiveBatchService service = new ReceiveBatchService(batchRepository, movementRepository);
+        ReceiveBatchService service = new ReceiveBatchService(batchRepository, movementRepository, catalogProducts);
 
         when(batchRepository.existsByProductIdAndLotNumberIgnoreCase(1L, "LOT-001")).thenReturn(false);
         when(batchRepository.save(any(Batch.class))).thenAnswer(invocation -> {
@@ -42,8 +45,20 @@ class ReceiveBatchServiceTest {
     }
 
     @Test
+    void shouldRejectAnUnknownProductBeforePersistingItsBatch() {
+        when(catalogProducts.getProduct(999L)).thenThrow(new ProductNotFoundException(999L));
+
+        assertThrows(ProductNotFoundException.class, () ->
+                new ReceiveBatchService(batchRepository, movementRepository, catalogProducts)
+                        .receive(999L, "LOT-001", 50, Instant.now(), null));
+
+        verify(batchRepository, never()).save(any());
+        verifyNoInteractions(movementRepository);
+    }
+
+    @Test
     void shouldRejectDuplicateLotForProduct() {
-        ReceiveBatchService service = new ReceiveBatchService(batchRepository, movementRepository);
+        ReceiveBatchService service = new ReceiveBatchService(batchRepository, movementRepository, catalogProducts);
         when(batchRepository.existsByProductIdAndLotNumberIgnoreCase(1L, "LOT-001")).thenReturn(true);
 
         assertThrows(BatchAlreadyExistsException.class,

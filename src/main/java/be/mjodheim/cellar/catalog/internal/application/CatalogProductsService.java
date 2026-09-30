@@ -2,6 +2,7 @@ package be.mjodheim.cellar.catalog.internal.application;
 
 import be.mjodheim.cellar.catalog.CatalogProductView;
 import be.mjodheim.cellar.catalog.CatalogProducts;
+import be.mjodheim.cellar.catalog.ProductNotFoundException;
 import be.mjodheim.cellar.catalog.internal.application.port.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

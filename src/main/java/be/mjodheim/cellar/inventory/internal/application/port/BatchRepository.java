@@ -42,4 +42,10 @@ public interface BatchRepository {
      * @return {@code true} when a matching active batch exists
      */
     boolean existsByProductIdAndLotNumberIgnoreCase(Long productId, String lotNumber);
+
+    /** Locks a batch before changing its quantities or deleting it. */
+    Optional<Batch> findByIdForUpdate(Long id);
+
+    /** Locks available batches, then returns them in FEFO order. */
+    List<Batch> findByProductIdFefoForUpdate(Long productId);
 }

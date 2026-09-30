@@ -1,5 +1,6 @@
 package be.mjodheim.cellar.inventory.internal.application;
 
+import be.mjodheim.cellar.inventory.InsufficientStockException;
 import be.mjodheim.cellar.inventory.internal.application.port.AllocationRepository;
 import be.mjodheim.cellar.inventory.internal.application.port.BatchRepository;
 import be.mjodheim.cellar.inventory.internal.domain.Allocation;
@@ -27,7 +28,7 @@ class AllocateStockServiceTest {
     void shouldAllocateAcrossBatchesInRepositoryFefoOrder() {
         Batch first = batch(1L, "A", 3, LocalDate.of(2026, 10, 1));
         Batch second = batch(2L, "B", 5, LocalDate.of(2026, 11, 1));
-        when(batchRepository.findByProductIdFefo(99L)).thenReturn(List.of(first, second));
+        when(batchRepository.findByProductIdFefoForUpdate(99L)).thenReturn(List.of(first, second));
         when(batchRepository.save(any(Batch.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(allocationRepository.save(any(Allocation.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -43,7 +44,7 @@ class AllocateStockServiceTest {
 
     @Test
     void shouldRejectWhenTotalStockIsInsufficient() {
-        when(batchRepository.findByProductIdFefo(99L)).thenReturn(List.of(batch(1L, "A", 2, null)));
+        when(batchRepository.findByProductIdFefoForUpdate(99L)).thenReturn(List.of(batch(1L, "A", 2, null)));
 
         AllocateStockService service = new AllocateStockService(batchRepository, allocationRepository);
 

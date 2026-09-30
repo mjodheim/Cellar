@@ -96,7 +96,7 @@ public class AuthenticationService {
      */
     @Transactional
     public AuthenticationResult login(String email, String rawPassword) {
-        User user = userRepository.findByEmail(normalizeEmail(email))
+        User user = userRepository.findByEmailForUpdate(normalizeEmail(email))
                 .filter(candidate -> candidate.enabled() && !candidate.isDeleted())
                 .orElseThrow(InvalidCredentialsException::new);
 
@@ -116,16 +116,20 @@ public class AuthenticationService {
      */
     @Transactional
     public AuthenticationResult refresh(String rawRefreshToken) {
-        Instant now = Instant.now();
         String hash = refreshTokenCodec.hash(rawRefreshToken);
-
-        RefreshToken current = refreshTokenRepository.findByTokenHash(hash)
-                .filter(token -> token.isActiveAt(now))
+        Long userId = refreshTokenRepository.findUserIdByTokenHash(hash)
                 .orElseThrow(InvalidRefreshTokenException::new);
 
-        User user = userRepository.findById(current.userId())
+        // Account locks always precede token locks, also during account deletion.
+        User user = userRepository.findByIdForUpdate(userId)
                 .filter(candidate -> candidate.enabled() && !candidate.isDeleted())
                 .orElseThrow(InvalidRefreshTokenException::new);
+        RefreshToken current = refreshTokenRepository.findByTokenHashForUpdate(hash)
+                .orElseThrow(InvalidRefreshTokenException::new);
+        Instant now = Instant.now();
+        if (!current.userId().equals(user.id()) || !current.isActiveAt(now)) {
+            throw new InvalidRefreshTokenException();
+        }
 
         current.revoke(now);
         refreshTokenRepository.save(current);
@@ -143,7 +147,7 @@ public class AuthenticationService {
     @Transactional
     public void logout(String rawRefreshToken) {
         String hash = refreshTokenCodec.hash(rawRefreshToken);
-        refreshTokenRepository.findByTokenHash(hash).ifPresent(token -> {
+        refreshTokenRepository.findByTokenHashForUpdate(hash).ifPresent(token -> {
             token.revoke(Instant.now());
             refreshTokenRepository.save(token);
         });

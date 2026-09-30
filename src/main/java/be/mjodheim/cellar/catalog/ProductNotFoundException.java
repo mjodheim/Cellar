@@ -1,4 +1,4 @@
-package be.mjodheim.cellar.catalog.internal.application;
+package be.mjodheim.cellar.catalog;
 
 /**
  * Signals that a requested catalogue product does not exist.

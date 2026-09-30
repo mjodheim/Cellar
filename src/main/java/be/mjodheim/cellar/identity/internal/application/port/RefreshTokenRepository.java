@@ -33,4 +33,10 @@ public interface RefreshTokenRepository {
      * @return active refresh tokens
      */
     List<RefreshToken> findActiveByUserId(Long userId);
+
+    /** Reads the owner without caching a token entity before locking it. */
+    Optional<Long> findUserIdByTokenHash(String tokenHash);
+
+    /** Locks a token for rotation or logout until the transaction completes. */
+    Optional<RefreshToken> findByTokenHashForUpdate(String tokenHash);
 }

@@ -1,5 +1,6 @@
 package be.mjodheim.cellar.identity.internal.adapter.out.security;
 
+import be.mjodheim.cellar.identity.internal.application.port.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,9 +18,9 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.Base64;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
 
 /**
  * Central stateless HTTP security configuration.
@@ -88,18 +89,21 @@ class SecurityConfiguration {
      *
      * @param key HMAC signing key
      * @param issuer expected token issuer
+     * @param userRepository current account state for token validation
      * @return configured JWT decoder
      */
     @Bean
     JwtDecoder jwtDecoder(
             SecretKey key,
-            @Value("${cellar.security.jwt.issuer}") String issuer
+            @Value("${cellar.security.jwt.issuer}") String issuer,
+            UserRepository userRepository
     ) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                JwtValidators.createDefaultWithIssuer(issuer)
+                JwtValidators.createDefaultWithIssuer(issuer),
+                new JwtAccountValidator(userRepository)
         ));
         return decoder;
     }
@@ -155,7 +159,7 @@ class SecurityConfiguration {
                         .requestMatchers(HttpMethod.PATCH, "/api/catalog/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/catalog/**").hasRole("ADMIN")
                         .requestMatchers("/api/inventory/**").hasRole("ADMIN")
-                        .requestMatchers("/api/orders/**").authenticated()
+                        .requestMatchers("/api/orders/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/catalog/**").authenticated()
                         .requestMatchers("/api/auth/me").authenticated()
                         .anyRequest().authenticated())
