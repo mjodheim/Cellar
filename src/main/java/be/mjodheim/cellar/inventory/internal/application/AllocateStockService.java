@@ -1,5 +1,6 @@
 package be.mjodheim.cellar.inventory.internal.application;
 
+import be.mjodheim.cellar.inventory.InsufficientStockException;
 import be.mjodheim.cellar.inventory.internal.application.port.AllocationRepository;
 import be.mjodheim.cellar.inventory.internal.application.port.BatchRepository;
 import be.mjodheim.cellar.inventory.internal.domain.Allocation;
@@ -47,8 +48,8 @@ public class AllocateStockService {
             throw new IllegalArgumentException("Quantity must be greater than zero");
         }
 
-        List<Batch> batches = batchRepository.findByProductIdFefo(productId);
-        int totalAvailable = batches.stream().mapToInt(Batch::availableQuantity).sum();
+        List<Batch> batches = batchRepository.findByProductIdFefoForUpdate(productId);
+        long totalAvailable = batches.stream().mapToLong(Batch::availableQuantity).sum();
 
         if (totalAvailable < quantity) {
             throw new InsufficientStockException(productId, quantity, totalAvailable);

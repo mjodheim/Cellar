@@ -32,7 +32,7 @@ public class BatchLifecycleService {
      */
     @Transactional
     public void softDelete(Long id) {
-        var batch = batchRepository.findById(id).orElseThrow(() -> new BatchNotFoundException(id));
+        var batch = batchRepository.findByIdForUpdate(id).orElseThrow(() -> new BatchNotFoundException(id));
         batch.softDelete(Instant.now());
         batchRepository.save(batch);
     }

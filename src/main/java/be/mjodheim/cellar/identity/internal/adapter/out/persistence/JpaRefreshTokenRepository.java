@@ -1,6 +1,10 @@
 package be.mjodheim.cellar.identity.internal.adapter.out.persistence;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
@@ -27,4 +31,11 @@ interface JpaRefreshTokenRepository extends JpaRepository<RefreshTokenEntity, Lo
      * @return active refresh-token entities
      */
     List<RefreshTokenEntity> findByUserIdAndRevokedAtIsNullAndExpiresAtAfter(Long userId, Instant now);
+
+    @Query("select t.userId from RefreshTokenEntity t where t.tokenHash = :tokenHash")
+    Optional<Long> findUserIdByTokenHash(@Param("tokenHash") String tokenHash);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from RefreshTokenEntity t where t.tokenHash = :tokenHash")
+    Optional<RefreshTokenEntity> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
 }

@@ -13,7 +13,7 @@
 | Hibernate | `ddl-auto: validate` |
 | Contraintes critiques | également protégées en SQL |
 
-Le schéma courant est à la migration **V6**.
+Le schéma courant est à la migration **V7**. Les noms de produits sont uniques sans distinction de casse, après normalisation applicative. V7 refuse les doublons existants sans supprimer de produits ni leurs références.
 
 Une migration déjà appliquée n'est pas modifiée rétroactivement : toute correction passe par une nouvelle version Flyway.
 
@@ -35,6 +35,7 @@ Collaborations publiques actuelles :
 ```text
 ordering → catalog.CatalogProducts
 ordering → inventory.InventoryOperations
+inventory → catalog.CatalogProducts
 ```
 
 Les classes `internal` restent privées au module.
@@ -120,6 +121,10 @@ Exemples :
 - expédition + consommation des allocations + mouvements `SHIPMENT` ;
 - refresh token : révocation de l'ancien + création du nouveau.
 
+Les commandes, allocations, lots et sessions concernés sont relus avec des verrous pessimistes avant modification. Les verrous de lots sont acquis dans un ordre stable puis les allocations suivent FEFO. Les tokens sont verrouillés après leur compte pour coordonner refresh, connexion et suppression.
+
+Des tests d'intégration sur PostgreSQL temporaire vérifient les requêtes concurrentes, la chaîne de sécurité et les erreurs HTTP. Ils nécessitent Docker et sont exécutés par GitHub Actions avec Java 26.
+
 ---
 
 ## 🔐 Sécurité
@@ -153,15 +158,12 @@ Le projet maintient trois niveaux complémentaires :
 
 Les prochaines étapes de robustesse sont :
 
-- tests d'intégration avec PostgreSQL réel / Testcontainers ;
-- verrouillage et gestion de concurrence sur le stock ;
 - idempotence des commandes critiques ;
 - audit de l'utilisateur à l'origine des opérations ;
-- gestion globale des erreurs ;
 - pagination et recherche ;
 - Redis uniquement là où il apporte une vraie valeur ;
 - rate limiting ;
-- CI/CD ;
+- déploiement automatisé ;
 - observabilité ;
 - stratégie de sauvegarde et restauration.
 

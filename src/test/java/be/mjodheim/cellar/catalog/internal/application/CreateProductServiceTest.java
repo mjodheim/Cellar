@@ -68,6 +68,17 @@ class CreateProductServiceTest {
     }
 
     @Test
+    void shouldRejectDuplicateNameAfterTrimmingSpaces() {
+        when(productRepository.existsByNameIgnoreCase("Hydromel Classique")).thenReturn(true);
+
+        assertThrows(ProductAlreadyExistsException.class, () -> service.create(
+                "  Hydromel Classique  ", ProductType.MEAD, null, 750, new BigDecimal("14.90")));
+
+        verify(productRepository).existsByNameIgnoreCase("Hydromel Classique");
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
     void shouldRejectDuplicateNameIgnoringCase() {
         when(productRepository.existsByNameIgnoreCase("Hydromel Classique")).thenReturn(true);
 

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -19,7 +20,7 @@ import java.time.LocalDate;
  */
 record BatchReceiveRequest(
         @NotNull @Positive Long productId,
-        @NotBlank String lotNumber,
+        @NotBlank @Size(max = 100) String lotNumber,
         @Min(1) int quantity,
         @NotNull Instant receivedAt,
         LocalDate expiresOn

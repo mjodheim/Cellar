@@ -34,8 +34,9 @@ Claims principaux :
 
 | Claim | Contenu |
 | --- | --- |
-| `sub` | email |
+| `sub` | identifiant utilisateur immuable, sous forme de chaîne |
 | `uid` | identifiant utilisateur |
+| `email` | adresse email au moment de l'émission |
 | `name` | nom d'affichage |
 | `roles` | rôles de sécurité |
 | `iss` | issuer |
@@ -43,6 +44,8 @@ Claims principaux :
 | `exp` | expiration |
 
 Durée par défaut : **15 minutes**.
+
+Chaque requête vérifie également que le compte existe, reste actif et conserve le rôle présent dans le token. Les JWT antérieurs à ce changement, dont le sujet était l'email, sont rejetés : une reconnexion ou un refresh émet un token au nouveau format.
 
 ---
 
@@ -67,6 +70,8 @@ openssl rand -base64 32
 ## 🔒 Mots de passe
 
 Les mots de passe sont hashés avec **BCrypt**, coût 12.
+
+L'inscription exige au moins 12 caractères et au maximum 72 octets UTF-8. La limite en octets est aussi vérifiée à la connexion pour éviter les erreurs BCrypt avec les mots de passe longs ou multioctets.
 
 Un mot de passe en clair :
 
@@ -98,11 +103,13 @@ token_hash stocké en base
 À chaque `POST /api/auth/refresh` :
 
 1. le token reçu est haché ;
-2. son hash est recherché ;
-3. il doit être actif et non expiré ;
+2. son compte est verrouillé en base, puis le token est relu avec un verrou ;
+3. le compte doit être actif et le token non révoqué, non expiré ;
 4. l'ancien token est révoqué ;
 5. un nouveau refresh token est généré ;
 6. un nouvel access token est émis.
+
+La transaction conserve ces verrous jusqu'au commit. Deux refresh simultanés du même token ne peuvent donc pas produire deux successeurs. La connexion et la suppression du compte prennent également le verrou du compte avant de modifier ses sessions.
 
 ---
 
@@ -116,7 +123,7 @@ token_hash stocké en base
 | Lecture Catalog | Authentifié |
 | Écriture Catalog | ADMIN |
 | Inventory | ADMIN |
-| Orders | Authentifié |
+| Orders | ADMIN |
 | `/api/auth/me` | Authentifié |
 
 ---
@@ -150,7 +157,7 @@ Elle :
 - désactive le compte ;
 - révoque les refresh tokens encore actifs.
 
-Les access tokens déjà émis restent valides jusqu'à leur expiration courte.
+Les access tokens déjà émis sont rejetés dès les requêtes suivantes. Une réinscription avec le même email crée un nouvel identifiant et ne donne aucun droit aux tokens de l'ancien compte.
 
 ---
 

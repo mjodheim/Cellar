@@ -40,4 +40,10 @@ public interface UserRepository {
      * @return {@code true} when a non-deleted user uses the email
      */
     boolean existsByEmail(String email);
+
+    /** Locks an account until the current transaction completes. */
+    Optional<User> findByIdForUpdate(Long id);
+
+    /** Locks a non-deleted account by normalized email for login. */
+    Optional<User> findByEmailForUpdate(String email);
 }

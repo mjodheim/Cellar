@@ -3,11 +3,14 @@ package be.mjodheim.cellar.ordering.internal.application;
 import be.mjodheim.cellar.inventory.InventoryOperations;
 import be.mjodheim.cellar.ordering.internal.application.port.OrderRepository;
 import be.mjodheim.cellar.ordering.internal.domain.Order;
+import be.mjodheim.cellar.ordering.internal.domain.OrderLine;
 import be.mjodheim.cellar.ordering.internal.domain.OrderStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Coordinates order status transitions with Inventory reservations and shipment consumption.
@@ -44,7 +47,7 @@ public class OrderLifecycleService {
         order.confirm(Instant.now());
         Order saved = orderRepository.save(order);
 
-        for (var line : saved.lines()) {
+        for (var line : orderedLines(saved)) {
             inventoryOperations.allocate(line.id(), line.productId(), line.quantity());
         }
 
@@ -74,7 +77,7 @@ public class OrderLifecycleService {
     public Order ship(Long id) {
         Order order = get(id);
 
-        for (var line : order.lines()) {
+        for (var line : orderedLines(order)) {
             inventoryOperations.consume(line.id());
         }
 
@@ -93,7 +96,7 @@ public class OrderLifecycleService {
         Order order = get(id);
 
         if (order.status() == OrderStatus.CONFIRMED || order.status() == OrderStatus.PREPARING) {
-            for (var line : order.lines()) {
+            for (var line : orderedLines(order)) {
                 inventoryOperations.release(line.id());
             }
         }
@@ -115,6 +118,13 @@ public class OrderLifecycleService {
     }
 
     private Order get(Long id) {
-        return orderRepository.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
+        return orderRepository.findByIdForUpdate(id).orElseThrow(() -> new OrderNotFoundException(id));
+    }
+
+    // Use the same product order for confirmation, cancellation and shipment.
+    private static List<OrderLine> orderedLines(Order order) {
+        return order.lines().stream()
+                .sorted(Comparator.comparing(OrderLine::productId).thenComparing(OrderLine::id))
+                .toList();
     }
 }

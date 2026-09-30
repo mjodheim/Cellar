@@ -1,6 +1,8 @@
 package be.mjodheim.cellar.inventory.internal.adapter.out.persistence;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -47,4 +49,19 @@ interface JpaBatchRepository extends JpaRepository<BatchEntity, Long> {
               b.id asc
             """)
     List<BatchEntity> findAvailableByProductIdFefo(@Param("productId") Long productId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select b from BatchEntity b where b.id = :id and b.deletedAt is null")
+    Optional<BatchEntity> findByIdForUpdate(@Param("id") Long id);
+
+    // Acquire locks in identifier order; the adapter applies FEFO afterwards.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select b from BatchEntity b
+            where b.productId = :productId
+              and b.deletedAt is null
+              and b.quantityOnHand > b.quantityReserved
+            order by b.id asc
+            """)
+    List<BatchEntity> findAvailableByProductIdForUpdate(@Param("productId") Long productId);
 }

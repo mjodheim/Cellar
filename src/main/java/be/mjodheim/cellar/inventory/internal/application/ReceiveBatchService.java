@@ -1,5 +1,6 @@
 package be.mjodheim.cellar.inventory.internal.application;
 
+import be.mjodheim.cellar.catalog.CatalogProducts;
 import be.mjodheim.cellar.inventory.internal.application.port.BatchRepository;
 import be.mjodheim.cellar.inventory.internal.application.port.StockMovementRepository;
 import be.mjodheim.cellar.inventory.internal.domain.Batch;
@@ -20,16 +21,20 @@ public class ReceiveBatchService {
 
     private final BatchRepository batchRepository;
     private final StockMovementRepository movementRepository;
+    private final CatalogProducts catalogProducts;
 
     /**
      * Creates the batch reception service.
      *
      * @param batchRepository batch persistence boundary
      * @param movementRepository movement persistence boundary
+     * @param catalogProducts public catalogue boundary used to validate the product
      */
-    public ReceiveBatchService(BatchRepository batchRepository, StockMovementRepository movementRepository) {
+    public ReceiveBatchService(BatchRepository batchRepository, StockMovementRepository movementRepository,
+                               CatalogProducts catalogProducts) {
         this.batchRepository = batchRepository;
         this.movementRepository = movementRepository;
+        this.catalogProducts = catalogProducts;
     }
 
     /**
@@ -45,12 +50,14 @@ public class ReceiveBatchService {
      */
     @Transactional
     public Batch receive(Long productId, String lotNumber, int quantity, Instant receivedAt, LocalDate expiresOn) {
-        if (batchRepository.existsByProductIdAndLotNumberIgnoreCase(productId, lotNumber)) {
-            throw new BatchAlreadyExistsException(productId, lotNumber);
+        Batch batch = Batch.receive(productId, lotNumber, quantity, receivedAt, expiresOn, Instant.now());
+        catalogProducts.getProduct(productId);
+        if (batchRepository.existsByProductIdAndLotNumberIgnoreCase(productId, batch.lotNumber())) {
+            throw new BatchAlreadyExistsException(productId, batch.lotNumber());
         }
 
-        Instant now = Instant.now();
-        Batch saved = batchRepository.save(Batch.receive(productId, lotNumber, quantity, receivedAt, expiresOn, now));
+        Instant now = batch.createdAt();
+        Batch saved = batchRepository.save(batch);
 
         movementRepository.save(StockMovement.record(
                 saved.id(),

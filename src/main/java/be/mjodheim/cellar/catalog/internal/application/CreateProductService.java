@@ -46,10 +46,6 @@ public class CreateProductService {
             int volumeMl,
             BigDecimal price
     ) {
-        if (productRepository.existsByNameIgnoreCase(name)) {
-            throw new ProductAlreadyExistsException(name);
-        }
-
         Product product = Product.create(
                 name,
                 type,
@@ -59,6 +55,9 @@ public class CreateProductService {
                 Instant.now()
         );
 
+        if (productRepository.existsByNameIgnoreCase(product.name())) {
+            throw new ProductAlreadyExistsException(product.name());
+        }
         return productRepository.save(product);
     }
 }

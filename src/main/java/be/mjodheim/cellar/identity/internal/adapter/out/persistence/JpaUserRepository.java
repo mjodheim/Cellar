@@ -1,6 +1,10 @@
 package be.mjodheim.cellar.identity.internal.adapter.out.persistence;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -24,4 +28,12 @@ interface JpaUserRepository extends JpaRepository<UserEntity, Long> {
      * @return {@code true} when a matching entity exists
      */
     boolean existsByEmailIgnoreCaseAndDeletedAtIsNull(String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from UserEntity u where u.id = :id and u.deletedAt is null")
+    Optional<UserEntity> findByIdForUpdate(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from UserEntity u where lower(u.email) = lower(:email) and u.deletedAt is null")
+    Optional<UserEntity> findByEmailForUpdate(@Param("email") String email);
 }

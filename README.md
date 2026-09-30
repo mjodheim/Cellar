@@ -140,7 +140,7 @@ Cellar fonctionne en mode **stateless** avec Spring Security.
 | Lecture Catalog | Authentifié |
 | Écriture Catalog | ADMIN |
 | Inventory | ADMIN |
-| Orders | Authentifié |
+| Orders | ADMIN |
 | `/api/auth/me` | Authentifié |
 
 Le JWT se transmet avec :
@@ -163,7 +163,9 @@ PostgreSQL est la source de vérité transactionnelle.
 - `Batch`, `Order` et `User` utilisent le soft delete ;
 - `Product` utilise une désactivation métier.
 
-Le schéma courant est à la migration **V6**.
+Le schéma courant est à la migration **V7**, qui impose l'unicité des noms de produits sans distinction de casse.
+
+Si des doublons existent déjà, V7 s'arrête sans supprimer de données. Renommer les produits concernés, puis relancer l'application.
 
 ---
 
@@ -176,10 +178,14 @@ Le projet couvre actuellement :
 - mappers et adapters de persistence ;
 - contrôleurs REST avec MockMvc ;
 - authentification et refresh tokens ;
-- frontières Spring Modulith.
+- frontières Spring Modulith ;
+- sécurité avec de vrais JWT et PostgreSQL temporaire ;
+- concurrence des réservations, confirmations, expéditions et refresh tokens.
+
+Les tests d'intégration utilisent **Testcontainers** : Java 26 et Docker démarré sont nécessaires. Ils créent leur propre base temporaire et ne lisent pas le fichier `.env` local. Le workflow GitHub Actions exécute la même suite.
 
 ```bash
-./mvnw test
+bash mvnw test
 ```
 
 Sous Windows :
@@ -243,7 +249,7 @@ docker compose -f compose.local.yaml up -d
 Linux / macOS :
 
 ```bash
-./mvnw spring-boot:run
+bash mvnw spring-boot:run
 ```
 
 Windows :
@@ -356,13 +362,10 @@ L'objectif est de conserver un backend **compréhensible, testable, traçable et
 
 Le socle métier, la sécurité, la documentation et la Javadoc sont en place. Les prochains chantiers concernent surtout la robustesse de production :
 
-- tests d'intégration PostgreSQL / Testcontainers ;
-- concurrence et verrouillage du stock ;
 - idempotence des opérations critiques ;
 - audit utilisateur ;
-- gestion globale et normalisée des erreurs ;
 - pagination et recherche ;
 - Redis et rate limiting lorsque leur utilité est démontrée ;
-- CI/CD ;
+- déploiement automatisé ;
 - dockerisation complète de l'application ;
 - observabilité et stratégie de sauvegarde.

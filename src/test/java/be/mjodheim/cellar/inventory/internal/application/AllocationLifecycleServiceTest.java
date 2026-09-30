@@ -32,8 +32,8 @@ class AllocationLifecycleServiceTest {
         batch.reserve(4, Instant.parse("2026-09-28T12:30:00Z"));
         Allocation allocation = Allocation.reserve(7L, 1L, 4, Instant.parse("2026-09-28T12:30:00Z"));
 
-        when(allocationRepository.findByOrderLineId(7L)).thenReturn(List.of(allocation));
-        when(batchRepository.findById(1L)).thenReturn(Optional.of(batch));
+        when(allocationRepository.findByOrderLineIdForUpdate(7L)).thenReturn(List.of(allocation));
+        when(batchRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(batch));
 
         new AllocationLifecycleService(allocationRepository, batchRepository, movementRepository)
                 .releaseForOrderLine(7L);
@@ -48,8 +48,8 @@ class AllocationLifecycleServiceTest {
         batch.reserve(4, Instant.parse("2026-09-28T12:30:00Z"));
         Allocation allocation = Allocation.reserve(7L, 1L, 4, Instant.parse("2026-09-28T12:30:00Z"));
 
-        when(allocationRepository.findByOrderLineId(7L)).thenReturn(List.of(allocation));
-        when(batchRepository.findById(1L)).thenReturn(Optional.of(batch));
+        when(allocationRepository.findByOrderLineIdForUpdate(7L)).thenReturn(List.of(allocation));
+        when(batchRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(batch));
 
         new AllocationLifecycleService(allocationRepository, batchRepository, movementRepository)
                 .consumeForOrderLine(7L);

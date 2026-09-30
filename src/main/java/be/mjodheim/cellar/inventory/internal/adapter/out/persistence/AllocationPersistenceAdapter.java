@@ -31,4 +31,11 @@ class AllocationPersistenceAdapter implements AllocationRepository {
                 .map(InventoryPersistenceMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<Allocation> findByOrderLineIdForUpdate(Long orderLineId) {
+        return repository.findByOrderLineIdForUpdate(orderLineId).stream()
+                .map(InventoryPersistenceMapper::toDomain)
+                .toList();
+    }
 }

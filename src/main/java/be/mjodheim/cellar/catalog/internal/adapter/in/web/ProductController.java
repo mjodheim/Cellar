@@ -1,8 +1,8 @@
 package be.mjodheim.cellar.catalog.internal.adapter.in.web;
 
+import be.mjodheim.cellar.catalog.ProductNotFoundException;
 import be.mjodheim.cellar.catalog.internal.application.CreateProductService;
 import be.mjodheim.cellar.catalog.internal.application.ProductAlreadyExistsException;
-import be.mjodheim.cellar.catalog.internal.application.ProductNotFoundException;
 import be.mjodheim.cellar.catalog.internal.application.ProductQueryService;
 import be.mjodheim.cellar.catalog.internal.domain.Product;
 import io.swagger.v3.oas.annotations.Operation;

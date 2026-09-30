@@ -34,24 +34,27 @@ public class UserAccountService {
     /**
      * Returns the current non-deleted account.
      *
-     * @param email authenticated principal email
+     * @param userId immutable authenticated account identifier
      * @return matching user account
      * @throws UserNotFoundException when the account no longer exists
      */
     @Transactional(readOnly = true)
-    public User findCurrent(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException(email));
+    public User findCurrent(Long userId) {
+        return userRepository.findById(userId)
+                .filter(user -> user.enabled() && !user.isDeleted())
+                .orElseThrow(() -> new UserNotFoundException(userId));
     }
 
     /**
      * Soft-deletes the account and revokes all still-active refresh tokens.
      *
-     * @param email authenticated principal email
+     * @param userId immutable authenticated account identifier
      */
     @Transactional
-    public void deleteCurrent(String email) {
-        User user = findCurrent(email);
+    public void deleteCurrent(Long userId) {
+        User user = userRepository.findByIdForUpdate(userId)
+                .filter(candidate -> candidate.enabled() && !candidate.isDeleted())
+                .orElseThrow(() -> new UserNotFoundException(userId));
         Instant now = Instant.now();
 
         user.softDelete(now);

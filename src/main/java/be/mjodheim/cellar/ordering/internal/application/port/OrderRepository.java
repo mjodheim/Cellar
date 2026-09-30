@@ -32,4 +32,7 @@ public interface OrderRepository {
      * @return orders in repository-defined order
      */
     List<Order> findAll();
+
+    /** Locks an order for its lifecycle transition in the current transaction. */
+    Optional<Order> findByIdForUpdate(Long id);
 }

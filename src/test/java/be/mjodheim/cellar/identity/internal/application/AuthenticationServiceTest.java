@@ -79,7 +79,7 @@ class AuthenticationServiceTest {
     @Test
     void shouldRejectWrongPasswordWithoutRevealingDetails() {
         User user = existingUser();
-        when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailForUpdate("user@example.com")).thenReturn(Optional.of(user));
         when(passwordHashingPort.matches("wrong-password", "hash")).thenReturn(false);
 
         assertThrows(
@@ -102,8 +102,9 @@ class AuthenticationServiceTest {
         );
 
         when(refreshTokenCodec.hash("old-refresh")).thenReturn("c".repeat(64));
-        when(refreshTokenRepository.findByTokenHash("c".repeat(64))).thenReturn(Optional.of(current));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(refreshTokenRepository.findUserIdByTokenHash("c".repeat(64))).thenReturn(Optional.of(1L));
+        when(refreshTokenRepository.findByTokenHashForUpdate("c".repeat(64))).thenReturn(Optional.of(current));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         when(refreshTokenCodec.generate())
                 .thenReturn(new RefreshTokenCodec.GeneratedRefreshToken("new-refresh", "d".repeat(64)));
         when(refreshTokenRepository.save(any(RefreshToken.class)))
@@ -116,6 +117,20 @@ class AuthenticationServiceTest {
         assertNotNull(current.revokedAt());
         assertEquals("new-refresh", result.refreshToken());
         assertEquals("new-access", result.accessToken());
+    }
+
+    @Test
+    void shouldRejectARevokedTokenReadUnderLock() {
+        Instant now = Instant.now();
+        when(refreshTokenCodec.hash("old-refresh")).thenReturn("c".repeat(64));
+        when(refreshTokenRepository.findUserIdByTokenHash("c".repeat(64))).thenReturn(Optional.of(1L));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(existingUser()));
+        when(refreshTokenRepository.findByTokenHashForUpdate("c".repeat(64))).thenReturn(Optional.of(
+                RefreshToken.rehydrate(10L, 1L, "c".repeat(64), now.plusSeconds(3600), now.minusSeconds(60), now)));
+
+        assertThrows(InvalidRefreshTokenException.class, () -> service().refresh("old-refresh"));
+        verify(refreshTokenCodec, never()).generate();
+        verify(refreshTokenRepository, never()).save(any());
     }
 
     private AuthenticationService service() {

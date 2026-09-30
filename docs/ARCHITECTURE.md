@@ -42,6 +42,7 @@ flowchart LR
 
         O -->|CatalogProducts| C
         O -->|InventoryOperations| I
+        I -->|CatalogProducts| C
     end
 
     DB[(PostgreSQL)]
@@ -81,7 +82,9 @@ Exemples actuels :
 ```text
 catalog.CatalogProducts
 catalog.CatalogProductView
+catalog.ProductNotFoundException
 inventory.InventoryOperations
+inventory.InsufficientStockException
 ```
 
 ### `internal/domain`
@@ -164,6 +167,7 @@ Aujourd'hui :
 ```text
 Ordering ──> CatalogProducts
 Ordering ──> InventoryOperations
+Inventory ──> CatalogProducts
 ```
 
 ---
@@ -241,6 +245,10 @@ Principes :
 - Hibernate utilise `ddl-auto: validate` ;
 - chaque module garde ses adapters de persistence près de son métier ;
 - pas de package global `data` qui connaîtrait tous les domaines.
+
+Les transitions de commandes et les écritures de stock prennent des verrous pessimistes dans la transaction. Les lignes sont traitées par identifiant de produit et les lots sont verrouillés par identifiant avant d'être triés en FEFO. La règle métier FEFO reste ainsi indépendante de l'ordre d'acquisition des verrous.
+
+`ApiExceptionHandler` traduit les exceptions publiques des modules en réponses `ProblemDetail` : produit absent en 404, stock insuffisant ou conflit de données/concurrence en 409, requête invalide en 400. Les contrôleurs conservent leurs erreurs propres au module.
 
 ---
 

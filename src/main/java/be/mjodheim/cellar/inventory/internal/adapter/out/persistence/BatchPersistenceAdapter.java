@@ -4,6 +4,7 @@ import be.mjodheim.cellar.inventory.internal.application.port.BatchRepository;
 import be.mjodheim.cellar.inventory.internal.domain.Batch;
 import org.springframework.stereotype.Repository;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,5 +43,21 @@ class BatchPersistenceAdapter implements BatchRepository {
     @Override
     public boolean existsByProductIdAndLotNumberIgnoreCase(Long productId, String lotNumber) {
         return repository.existsByProductIdAndLotNumberIgnoreCaseAndDeletedAtIsNull(productId, lotNumber);
+    }
+
+    @Override
+    public Optional<Batch> findByIdForUpdate(Long id) {
+        return repository.findByIdForUpdate(id).map(InventoryPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public List<Batch> findByProductIdFefoForUpdate(Long productId) {
+        return repository.findAvailableByProductIdForUpdate(productId).stream()
+                .map(InventoryPersistenceMapper::toDomain)
+                .sorted(Comparator.comparing(Batch::expiresOn,
+                                Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Batch::receivedAt)
+                        .thenComparing(Batch::id))
+                .toList();
     }
 }
