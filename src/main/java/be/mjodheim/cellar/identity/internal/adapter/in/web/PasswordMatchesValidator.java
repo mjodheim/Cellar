@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Validates password confirmation without logging or exposing password values.
  */
-class PasswordMatchesValidator implements ConstraintValidator<PasswordMatches, RegisterRequest> {
+public class PasswordMatchesValidator implements ConstraintValidator<PasswordMatches, RegisterRequest> {
 
     /**
      * Compares the password and confirmation fields and attaches the violation to

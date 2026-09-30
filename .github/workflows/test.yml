@@ -3,7 +3,7 @@ name: Tests
 on:
   pull_request:
   push:
-    branches: [main, fix/cellar-security-stock-concurrency]
+    branches: [main]
 
 permissions:
   contents: read

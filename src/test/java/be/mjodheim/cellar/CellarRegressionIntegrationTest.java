@@ -12,6 +12,7 @@ import be.mjodheim.cellar.ordering.internal.application.CreateOrderLineCommand;
 import be.mjodheim.cellar.ordering.internal.application.CreateOrderService;
 import be.mjodheim.cellar.ordering.internal.application.OrderLifecycleService;
 import be.mjodheim.cellar.ordering.internal.domain.Order;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -72,7 +73,17 @@ class CellarRegressionIntegrationTest extends PostgresIntegrationSupport {
 
     @Test
     void publicRegistrationDoesNotGrantOrderManagement() throws Exception {
-        String bearer = bearer(register("user@example.com"));
+        var registration = mvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"user@example.com","displayName":"User",
+                                 "password":"very-secure-test-password",
+                                 "passwordConfirm":"very-secure-test-password"}
+                                """))
+                .andExpect(status().isCreated()).andExpect(jsonPath("$.role").value("USER"))
+                .andReturn();
+        String accessToken = JsonPath.read(registration.getResponse().getContentAsString(), "$.accessToken");
+        String bearer = "Bearer " + accessToken;
         mvc.perform(get("/api/orders").header(HttpHeaders.AUTHORIZATION, bearer))
                 .andExpect(status().isForbidden());
         mvc.perform(get("/api/orders/1").header(HttpHeaders.AUTHORIZATION, bearer))
@@ -87,6 +98,26 @@ class CellarRegressionIntegrationTest extends PostgresIntegrationSupport {
         }
         mvc.perform(delete("/api/orders/1").header(HttpHeaders.AUTHORIZATION, bearer))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void invalidRegistrationAndOversizedLoginPasswordsReturn400() throws Exception {
+        String oversized = "a".repeat(69) + "😀";
+        for (String[] passwords : List.of(new String[]{PASSWORD, "different-password"},
+                new String[]{oversized, oversized})) {
+            mvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"email":"user@example.com","displayName":"User",
+                                     "password":"%s","passwordConfirm":"%s"}
+                                    """.formatted(passwords[0], passwords[1])))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email":"user@example.com","password":"%s"}
+                                """.formatted(oversized)))
+                .andExpect(status().isBadRequest());
+        assertEquals(0L, count("SELECT COUNT(*) FROM app_user"));
     }
 
     @Test
