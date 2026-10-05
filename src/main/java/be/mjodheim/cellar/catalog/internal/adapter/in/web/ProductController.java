@@ -31,6 +31,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/catalog/products")
+// Documentation Swagger
 @Tag(name = "Products", description = "Gestion du catalogue produit")
 class ProductController {
 
@@ -52,6 +53,7 @@ class ProductController {
      * @return HTTP 201 response containing the created product
      */
     @PostMapping
+    // Documentation Swagger
     @Operation(summary = "Créer un produit")
     @ApiResponses({
             @ApiResponse(
@@ -90,11 +92,12 @@ class ProductController {
      * @return product response list
      */
     @GetMapping
+    // Documentation Swagger
     @Operation(summary = "Lister les produits")
     @ApiResponse(responseCode = "200", description = "Liste des produits")
     List<ProductResponse> findAll() {
         return productQueryService.findAll().stream()
-                .map(ProductResponse::from)
+                .map(ProductResponse::from) // On retourne une liste de dto de sortie à la vue
                 .toList();
     }
 
@@ -105,6 +108,7 @@ class ProductController {
      * @return matching product response
      */
     @GetMapping("/{id}")
+    // Documentation Swagger
     @Operation(summary = "Récupérer un produit par son identifiant")
     @ApiResponses({
             @ApiResponse(

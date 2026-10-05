@@ -10,6 +10,8 @@ import java.util.Objects;
  * <p>This class deliberately contains no JPA or HTTP concerns. It protects the
  * product invariants and is persisted through a dedicated adapter.</p>
  */
+
+// Objet métier qui protège lui-même ses invariants
 public final class Product {
 
     private final Long id;

@@ -1,5 +1,6 @@
 package be.mjodheim.cellar.ordering.internal.application;
 
+import be.mjodheim.cellar.catalog.CatalogProductView;
 import be.mjodheim.cellar.catalog.CatalogProducts;
 import be.mjodheim.cellar.ordering.internal.application.port.OrderRepository;
 import be.mjodheim.cellar.ordering.internal.domain.Order;
@@ -53,7 +54,7 @@ public class CreateOrderService {
                 throw new IllegalArgumentException("Order line is required");
             }
 
-            var product = catalogProducts.getProduct(line.productId());
+            CatalogProductView product = catalogProducts.getProduct(line.productId());
             if (!product.active()) {
                 throw new ProductUnavailableException(product.id());
             }

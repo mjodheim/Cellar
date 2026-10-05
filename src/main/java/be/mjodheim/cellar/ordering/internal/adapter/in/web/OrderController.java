@@ -60,7 +60,11 @@ class OrderController {
     @GetMapping
     @Operation(summary = "Lister les commandes")
     List<OrderResponse> findAll() {
-        return queryService.findAll().stream().map(OrderResponse::from).toList();
+
+        return queryService.findAll()
+                .stream()
+                .map(OrderResponse::from)
+                .toList();
     }
 
     /**
